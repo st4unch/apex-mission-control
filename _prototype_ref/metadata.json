@@ -1,0 +1,6 @@
+{
+  "name": "Agent Control Plane Layout",
+  "description": "An interactive three-panel dashboard layout for monitoring and interacting with parallel Claude Code agents.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
