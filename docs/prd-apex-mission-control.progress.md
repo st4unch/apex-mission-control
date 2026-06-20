@@ -92,3 +92,16 @@ created: 2026-06-16
 - 2026-06-16 — Brainstorming + ilk PRD taslağı.
 - 2026-06-16 — `/spec-first-feature` pipeline: SYSTEM.md yazıldı (`docs/SYSTEM.md`), Phase 1 inline review+gate GO. PRD prod-ready'e yükseltildi (§0-§18, Risk Register 8, Failure Modes, 3 use case, Decision Log D1-D9, threat model). Phase 2c inline review+gate GO.
 - 2026-06-16 — **Blocker:** otonom subagent review/gate'leri ve Phase 3 `/prd-run` Anthropic session limit'ine takıldı (reset 5:40 Europe/Istanbul). Inline yürütüldü. `/prd-run` (Sonnet impl + Opus verify) kota açılınca başlatılacak.
+
+## Yayın & dağıtım (2026-06-20)
+- **Test suite:** P0 backend 14 hermetik test (`testutil.rs` temp git repo) — 3 gerçek bug yakaladı (symlink path, parent descendant, porcelain trim). P1 frontend 14 test (vitest). CI: `.github/workflows/ci.yml`. Plan: `docs/test-plan.md`.
+- **Git:** repo `git init` + ilk commit; **public** repo açıldı → https://github.com/st4unch/apex-mission-control (README + MIT LICENSE). Secret taraması temiz (cert/.p8/.env/.node-ca.pem tracked değil).
+- **macOS imzalama:** Developer ID Application (Murat Aydoğan / 7PG95YYJ64) + Apple notarize (App Store Connect API key `REDACTED-ASC-KEY-ID`, issuer `REDACTED-...`) + staple → `spctl: accepted, Notarized Developer ID`. Yeniden kullanılabilir **`app-signing` agent** kuruldu (`~/.claude/agents/app-signing.md`): masaüstü (Developer ID + notarytool) + mobil (Apple Distribution + ASC upload). Kimlik bilgileri agent'ta gömülü (private key/şifre değil).
+- **Release v0.0.1:** imzalı+notarize `ApexMissionControl-0.0.1-arm64.zip` GitHub Release'te.
+- **Sürüm tutarlılığı:** sürüm 3 dosyada da 0.0.x; header badge kaldırıldı, footer `getVersion()` ile gerçek sürümü gösterir.
+- **Özet doküman:** `docs/PROJECT-SUMMARY.md` (uygulama + session).
+
+## Performans — kasma & input gecikmesi (2026-06-20)
+- **Belirti 1 (kasma/donma):** Kök neden (kod incelemesi): (a) watcher 400ms'de `fs-changed` → frontend anında tüm worktree'lerde branch+collision git spawn (kaskad); (b) `agents` dep'i branch'i 3sn'de boşuna re-fetch; (c) arka planda da poll. **Düzeltme:** watcher debounce 400→1500ms; tüm git/claude poll'ları `document.hidden` iken durur (geri gelince 1 kez yeniler); branch poll stabil `repo` string'ine bağlandı. → **v0.0.2** olarak commit'lendi + imzalı/notarize paket `/tmp/ApexMissionControl-0.0.2-arm64.zip` hazır (kullanıcı "local kalsın" dedi, yayınlanmadı).
+- **Belirti 2 (input ~0.3sn gecikme):** Kök neden — **Tauri DEĞİL.** xterm yalnızca `addon-fit` kullanıyordu → varsayılan **DOM renderer** (en yavaş, tuş-yankısında gecikme). **Düzeltme:** `@xterm/addon-webgl` (GPU renderer) eklendi, context-loss fallback'li (`Terminal.tsx`). Test+build yeşil. İkincil katkı (gerekirse): 3sn'lik agents poll'u tüm App'i re-render ediyor — App'i bileşenlere bölmek/memoize sonraki adım.
+- **Durum:** Düzeltmeler kodda + commit bekliyor. Yeni imzalı sürüm (v0.0.2/3) yayınlanınca PC'deki kurulu uygulama düzelir.

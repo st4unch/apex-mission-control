@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { WebglAddon } from "@xterm/addon-webgl";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import "@xterm/xterm/css/xterm.css";
 
@@ -41,6 +42,15 @@ export default function Terminal({
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(el);
+    // GPU-accelerated renderer — the default DOM renderer adds visible input-echo
+    // latency. Fall back silently to DOM if WebGL is unavailable / context is lost.
+    try {
+      const webgl = new WebglAddon();
+      webgl.onContextLoss(() => webgl.dispose());
+      term.loadAddon(webgl);
+    } catch {
+      /* WebGL unavailable — DOM renderer */
+    }
     try {
       fit.fit();
     } catch {
