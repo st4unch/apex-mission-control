@@ -37,9 +37,12 @@ pub fn start_watching(
         if noisy(&ev) {
             return;
         }
-        // Debounce: at most one event every 400ms (avoids HMR/edit storms).
+        // Debounce: at most one event every 1.5s. The frontend reacts to `fs-changed`
+        // by re-running git-backed polls (branch topology, collisions) across every
+        // tracked worktree, so a tight debounce would spawn a git storm while agents
+        // edit files. 1.5s keeps the UI responsive without freezing the machine.
         let mut l = last.lock().unwrap();
-        if l.elapsed() < Duration::from_millis(400) {
+        if l.elapsed() < Duration::from_millis(1500) {
             return;
         }
         *l = Instant::now();

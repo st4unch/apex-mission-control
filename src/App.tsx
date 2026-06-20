@@ -206,6 +206,7 @@ export default function App() {
   useEffect(() => {
     let active = true;
     const load = () => {
+      if (document.hidden) return; // don't poll while the window is in the background
       invoke<AgentSession[]>("list_agent_sessions")
         .then((live) => {
           if (!active || !live.length) return;
@@ -350,27 +351,31 @@ export default function App() {
   };
 
   // LIVE: real branch topology for the selected agent's repo (else first workspace).
+  // Derive `repo` as a stable string so the poll doesn't re-subscribe on every
+  // 3s `agents` refresh — it only restarts when the actual repo path changes.
+  const selectedAgentWorktree = agents.find((a) => a.id === selectedAgentId)?.worktree;
+  const branchRepo =
+    selectedAgentWorktree && selectedAgentWorktree.startsWith("/")
+      ? selectedAgentWorktree
+      : workspaces.find((w) => w.startsWith("/")) ?? "";
   useEffect(() => {
-    const sel = agents.find((a) => a.id === selectedAgentId);
-    const repo =
-      sel?.worktree && sel.worktree.startsWith("/")
-        ? sel.worktree
-        : workspaces.find((w) => w.startsWith("/")) ?? "";
-    if (!repo) return;
+    if (!branchRepo) return;
     let active = true;
-    const load = () =>
-      invoke<GitBranchState[]>("list_branches", { repo })
+    const load = () => {
+      if (document.hidden) return;
+      invoke<GitBranchState[]>("list_branches", { repo: branchRepo })
         .then((b) => {
           if (active) setBranchList(b);
         })
         .catch(() => {});
+    };
     load();
     const t = setInterval(load, 5000);
     return () => {
       active = false;
       clearInterval(t);
     };
-  }, [selectedAgentId, agents, workspaces, fsTick]);
+  }, [branchRepo, fsTick]);
 
   // LIVE: real, hook-free file collisions — same repo-relative file edited in 2+
   // worktrees of a repo (git working-tree based).
@@ -379,18 +384,30 @@ export default function App() {
     editedFiles: number;
   }>({ collisions: [], editedFiles: 0 });
   useEffect(() => {
-    const load = () =>
+    if (!trackedPaths.length) return;
+    const load = () => {
+      if (document.hidden) return;
       invoke<{ collisions: { file: string; worktrees: string[] }[]; editedFiles: number }>(
         "pm_collisions",
         { paths: trackedPaths }
       )
         .then(setCollisionReport)
         .catch(() => {});
+    };
     load();
     const t = setInterval(load, 5000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaces, worktrees, fsTick]);
+
+  // Refresh once when the window becomes visible again (polls were paused while hidden).
+  useEffect(() => {
+    const onVis = () => {
+      if (!document.hidden) setFsTick((t) => t + 1);
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
 
   const addWorkspace = async () => {
     const sel = await openDialog({
@@ -655,6 +672,7 @@ export const loginHandler = async (req, res) => {
 
     // Live resource usage of the app's own process (not the machine).
     const pollMetrics = () => {
+      if (document.hidden) return;
       invoke<{ cpu: number; memMb: number }>("app_metrics")
         .then((m) => {
           setCpuUsage(Math.round(m.cpu));

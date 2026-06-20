@@ -80,7 +80,9 @@ export default function QueuePage({
 
   useEffect(() => {
     void refresh();
-    const t = setInterval(() => void refresh(), 5000);
+    const t = setInterval(() => {
+      if (!document.hidden) void refresh();
+    }, 5000);
     return () => clearInterval(t);
   }, [refresh]);
 
