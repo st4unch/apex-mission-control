@@ -50,6 +50,7 @@ import QueuePage from "./components/QueuePage";
 import { buildAgentCommand } from "./lib/agent";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getVersion } from "@tauri-apps/api/app";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
 // Types matching the user's workflow model
@@ -277,6 +278,12 @@ export default function App() {
   const [worktrees, setWorktrees] = useState<string[]>(() => loadList("apex.worktrees"));
   // Bumped on a real filesystem change (notify) so views refresh immediately.
   const [fsTick, setFsTick] = useState(0);
+
+  // Real app version from tauri.conf.json (stays in sync with the build).
+  const [appVersion, setAppVersion] = useState("");
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const un = listen("fs-changed", () => setFsTick((t) => t + 1));
@@ -731,9 +738,6 @@ export const loginHandler = async (req, res) => {
           </div>
           <div className="flex items-center space-x-1">
             <span className="font-semibold text-neutral-900 font-display">Apex Agent Control IDE</span>
-            <span className="text-neutral-600 font-mono text-[9px] bg-neutral-100 border border-neutral-205 px-1 py-0.2 rounded">
-              v2.1.1-daemon
-            </span>
           </div>
         </div>
 
@@ -1236,7 +1240,7 @@ export const loginHandler = async (req, res) => {
         </div>
 
         <div className="flex items-center space-x-4 text-neutral-600">
-          <span>Apex Mission Control <strong className="text-indigo-600 font-semibold">v0.1.0</strong></span>
+          <span>Apex Mission Control <strong className="text-indigo-600 font-semibold">v{appVersion || "…"}</strong></span>
           <span className="text-neutral-300">|</span>
           <span>UTF-8</span>
         </div>
