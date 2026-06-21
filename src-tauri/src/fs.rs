@@ -465,6 +465,163 @@ pub fn remove_worktree(worktree: String) -> Result<String, String> {
     Ok(format!("removed worktree {worktree}"))
 }
 
+// ── Claude Resources Viewer ──────────────────────────────────────────────────
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeSkill {
+    pub name: String,
+    pub path: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeAgent {
+    pub name: String,
+    pub path: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeHook {
+    pub name: String,
+    pub path: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeMcp {
+    pub name: String,
+    pub command: String,
+    pub description: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeResources {
+    pub skills: Vec<ClaudeSkill>,
+    pub agents: Vec<ClaudeAgent>,
+    pub hooks: Vec<ClaudeHook>,
+    pub mcps: Vec<ClaudeMcp>,
+}
+
+/// Scan `~/.claude/{skills,agents,hooks}` and merge MCP JSON configs.
+/// Returns a snapshot for the Resources Viewer tab.
+#[tauri::command(async)]
+pub fn list_claude_resources() -> Result<ClaudeResources, String> {
+    let home = std::env::var("HOME").map_err(|_| "HOME not set".to_string())?;
+    let claude = Path::new(&home).join(".claude");
+
+    // --- Skills: immediate subdirectories of ~/.claude/skills/ ---
+    let mut skills = Vec::new();
+    let skills_dir = claude.join("skills");
+    if let Ok(rd) = std::fs::read_dir(&skills_dir) {
+        let mut entries: Vec<_> = rd.flatten().collect();
+        entries.sort_by_key(|e| e.file_name());
+        for entry in entries {
+            let path = entry.path();
+            if path.is_dir() {
+                skills.push(ClaudeSkill {
+                    name: entry.file_name().to_string_lossy().into_owned(),
+                    path: path.to_string_lossy().into_owned(),
+                });
+            }
+        }
+    }
+
+    // --- Agents: ~/.claude/agents/*.md ---
+    let mut agents = Vec::new();
+    let agents_dir = claude.join("agents");
+    if let Ok(rd) = std::fs::read_dir(&agents_dir) {
+        let mut entries: Vec<_> = rd
+            .flatten()
+            .filter(|e| e.path().extension().map(|x| x == "md").unwrap_or(false))
+            .collect();
+        entries.sort_by_key(|e| e.file_name());
+        for entry in entries {
+            let path = entry.path();
+            let name = path
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned();
+            agents.push(ClaudeAgent {
+                name,
+                path: path.to_string_lossy().into_owned(),
+            });
+        }
+    }
+
+    // --- Hooks: ~/.claude/hooks/*.{sh,py,mjs} ---
+    let mut hooks = Vec::new();
+    let hooks_dir = claude.join("hooks");
+    if let Ok(rd) = std::fs::read_dir(&hooks_dir) {
+        let mut entries: Vec<_> = rd
+            .flatten()
+            .filter(|e| {
+                let p = e.path();
+                if !p.is_file() {
+                    return false;
+                }
+                matches!(
+                    p.extension().and_then(|x| x.to_str()),
+                    Some("sh") | Some("py") | Some("mjs")
+                )
+            })
+            .collect();
+        entries.sort_by_key(|e| e.file_name());
+        for entry in entries {
+            let path = entry.path();
+            hooks.push(ClaudeHook {
+                name: entry.file_name().to_string_lossy().into_owned(),
+                path: path.to_string_lossy().into_owned(),
+            });
+        }
+    }
+
+    // --- MCPs: merge ~/.claude/.mcp.json + ~/.claude/claude-config/mcp.json ---
+    let mcp_paths = [
+        claude.join(".mcp.json"),
+        claude.join("claude-config").join("mcp.json"),
+    ];
+    let mut mcps: Vec<ClaudeMcp> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for mcp_path in &mcp_paths {
+        if let Ok(content) = std::fs::read_to_string(mcp_path) {
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(servers) = val["mcpServers"].as_object() {
+                    let mut sorted: Vec<_> = servers.iter().collect();
+                    sorted.sort_by_key(|(k, _)| k.as_str());
+                    for (name, cfg) in sorted {
+                        if seen.contains(name) {
+                            continue;
+                        }
+                        seen.insert(name.clone());
+                        let command = cfg["command"]
+                            .as_str()
+                            .or_else(|| cfg["url"].as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let description = cfg["description"].as_str().unwrap_or("").to_string();
+                        mcps.push(ClaudeMcp {
+                            name: name.clone(),
+                            command,
+                            description,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(ClaudeResources {
+        skills,
+        agents,
+        hooks,
+        mcps,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
