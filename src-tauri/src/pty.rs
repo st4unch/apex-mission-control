@@ -7,21 +7,23 @@
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Mutex;
+use std::sync::{mpsc, Mutex};
+use std::time::Duration;
 
 use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
-use serde::Serialize;
-use tauri::ipc::Channel;
+use tauri::ipc::{Channel, InvokeResponseBody};
 use tauri::State;
 
-/// Events streamed from a PTY to the frontend.
-#[derive(Clone, Serialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
-pub enum PtyEvent {
-    /// Raw output bytes (frontend wraps in Uint8Array → xterm.write, UTF-8 safe).
-    Data { bytes: Vec<u8> },
-    /// Process ended.
-    Exit { code: Option<i64> },
+// Output is streamed to the frontend over the channel as two message shapes:
+//   - data: an `InvokeResponseBody::Raw` (bytes). Batches ≥1KB travel Tauri's
+//     binary fetch path (no JSON), reaching JS as an ArrayBuffer → xterm.write.
+//     Sending raw (not a `{type,bytes}` JSON enum) avoids ~4x byte-array JSON
+//     bloat that, under a high-output flood, saturates the webview message pump
+//     and delays the user's own keystroke echo. See src/perf/harness.ts.
+//   - exit: a tiny JSON `{"type":"exit"}` object.
+// The frontend discriminates by `msg instanceof ArrayBuffer`.
+fn exit_event() -> InvokeResponseBody {
+    InvokeResponseBody::Json("{\"type\":\"exit\"}".to_string())
 }
 
 struct PtyHandle {
@@ -44,7 +46,7 @@ fn default_shell() -> String {
 #[tauri::command]
 pub fn pty_spawn(
     state: State<PtyManager>,
-    on_event: Channel<PtyEvent>,
+    on_event: Channel<InvokeResponseBody>,
     cwd: Option<String>,
     shell: Option<String>,
     cols: Option<u16>,
@@ -99,27 +101,66 @@ pub fn pty_spawn(
 
     let id = format!("pty-{}", state.counter.fetch_add(1, Ordering::Relaxed));
 
-    // Reader thread: stream output until EOF, then signal exit.
-    let ch = on_event.clone();
+    // Output is delivered in two stages to keep a high-output terminal (e.g. a
+    // `claude` TUI redrawing, or a runaway `yes`) from (a) saturating the webview's
+    // single-threaded native→JS message pump — which delays the user's own
+    // keystroke echo (~400ms, measured; see src/perf/harness.ts) — and (b) growing
+    // memory without bound. Both come from the same root: nothing throttles a
+    // producer that outpaces the webview consumer.
+    //
+    // Stage 1 — reader thread: blocking reads push raw chunks into a BOUNDED queue.
+    // When the consumer lags, `tx.send` blocks → the reader stops draining the PTY
+    // → the OS PTY buffer fills → the child's write() blocks. That backpressure is
+    // what bounds memory and throttles a runaway producer.
+    let (tx, rx) = mpsc::sync_channel::<Vec<u8>>(256); // ≤256×8KB ≈ 2MB buffered
     std::thread::spawn(move || {
         let mut buf = [0u8; 8192];
         loop {
             match reader.read(&mut buf) {
                 Ok(0) => break,
                 Ok(n) => {
-                    if ch
-                        .send(PtyEvent::Data {
-                            bytes: buf[..n].to_vec(),
-                        })
-                        .is_err()
-                    {
+                    if tx.send(buf[..n].to_vec()).is_err() {
                         break;
                     }
                 }
                 Err(_) => break,
             }
         }
-        let _ = ch.send(PtyEvent::Exit { code: None });
+        // Dropping `tx` signals EOF to the coalescer below.
+    });
+
+    // Stage 2 — coalescer: drain the queue into one Channel event, then pace. A lone
+    // keystroke echo flushes immediately (the pause is AFTER the send, so it adds no
+    // echo latency); a sustained stream coalesces up to MAX_BATCH and is capped at
+    // ~MAX_BATCH/FLUSH ≈ 16 MB/s of events. The pacing is what makes the bounded
+    // queue above fill and apply backpressure — without it the consumer would never
+    // signal "slow down" and memory/event-rate would run away.
+    let ch = on_event.clone();
+    std::thread::spawn(move || {
+        const MAX_BATCH: usize = 128 * 1024;
+        const FLUSH: Duration = Duration::from_millis(8);
+        while let Ok(first) = rx.recv() {
+            let mut batch = first;
+            loop {
+                if batch.len() >= MAX_BATCH {
+                    break;
+                }
+                match rx.try_recv() {
+                    Ok(more) => batch.extend_from_slice(&more),
+                    Err(mpsc::TryRecvError::Empty) => break,
+                    Err(mpsc::TryRecvError::Disconnected) => {
+                        let _ = ch.send(InvokeResponseBody::Raw(batch));
+                        let _ = ch.send(exit_event());
+                        return;
+                    }
+                }
+            }
+            if ch.send(InvokeResponseBody::Raw(batch)).is_err() {
+                return;
+            }
+            std::thread::sleep(FLUSH);
+        }
+        let _ = ch.send(exit_event());
     });
 
     state.sessions.lock().unwrap().insert(

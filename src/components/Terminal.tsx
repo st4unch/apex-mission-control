@@ -5,9 +5,9 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import "@xterm/xterm/css/xterm.css";
 
-type PtyEvent =
-  | { type: "data"; bytes: number[] }
-  | { type: "exit"; code: number | null };
+// Output bytes arrive as a raw ArrayBuffer (binary fetch path — no JSON byte
+// bloat); process-exit arrives as a small JSON object. See src-tauri/src/pty.rs.
+type PtyMsg = ArrayBuffer | { type: "exit" };
 
 /**
  * Real interactive terminal: an xterm.js view wired to a PTY-backed login shell in
@@ -60,14 +60,14 @@ export default function Terminal({
     let ptyId: string | null = null;
     let disposed = false;
 
-    const channel = new Channel<PtyEvent>();
-    channel.onmessage = (ev) => {
+    const channel = new Channel<PtyMsg>();
+    channel.onmessage = (msg) => {
       // Output can still arrive after the component unmounts (StrictMode double-mount
       // in dev, or a fast close). Writing to a disposed xterm throws — guard it.
       if (disposed) return;
       try {
-        if (ev.type === "data") term.write(new Uint8Array(ev.bytes));
-        else if (ev.type === "exit")
+        if (msg instanceof ArrayBuffer) term.write(new Uint8Array(msg));
+        else if (msg && msg.type === "exit")
           term.write("\r\n\x1b[2m[process exited — close or reselect a session]\x1b[0m\r\n");
       } catch {
         /* terminal disposed mid-write */

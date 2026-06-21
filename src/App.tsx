@@ -689,6 +689,41 @@ export const loginHandler = async (req, res) => {
     };
   }, []);
 
+  // Dev-only perf harness hook (src/perf/harness.ts): lets the stress test
+  // inflate render load with synthetic branches to measure main-thread blocking.
+  // No-op unless VITE_APEX_PERF=1 — stripped from prod builds.
+  useEffect(() => {
+    if (import.meta.env.VITE_APEX_PERF !== "1") return;
+    const synth = (i: number): GitBranchState => ({
+      name: `perf/synthetic-${i}`,
+      type: i % 3 === 0 ? "PRD" : i % 3 === 1 ? "WIP" : "OPEN",
+      lastCommit: `${i % 60}m ago`,
+      author: "perf-harness",
+      status: (["synced", "ahead", "diverged", "conflict"] as const)[i % 4],
+      parent: i > 0 ? `perf/synthetic-${i - 1}` : "main",
+    });
+    const isSynth = (b: GitBranchState) => b.name.startsWith("perf/synthetic-");
+    const isSynthTab = (t: OpenTerminal) => t.key.startsWith("perf-term-");
+    window.__apexPerf = {
+      inflateBranches: (n: number) =>
+        setBranchList((prev) => [
+          ...prev.filter((b) => !isSynth(b)),
+          ...Array.from({ length: n }, (_, i) => synth(i)),
+        ]),
+      resetBranches: () => setBranchList((prev) => prev.filter((b) => !isSynth(b))),
+      openTerminals: (n: number) =>
+        setOpenTerminals((prev) => [
+          ...prev.filter((t) => !isSynthTab(t)),
+          ...Array.from({ length: n }, (_, i) => ({
+            key: `perf-term-${i}`,
+            name: `perf-${i}`,
+            kind: "terminal" as const,
+          })),
+        ]),
+      closeTerminals: () => setOpenTerminals((prev) => prev.filter((t) => !isSynthTab(t))),
+    };
+  }, []);
+
   // Find info about active agent working on selected file
   const activeFileObject = files.find((f) => f.path === selectedFile);
   const lockAgent = activeFileObject?.lockedByAgentId 
