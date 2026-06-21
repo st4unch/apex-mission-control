@@ -11,36 +11,18 @@ type PtyMsg = ArrayBuffer | { type: "exit" };
 
 export type TermTheme = "dark" | "light";
 
-// Color palettes for the two themes. The light palette darkens the ANSI brights so
-// output stays readable on a white background.
+// The integrated terminal stays the same soft-black (#25272b) in BOTH app themes —
+// an always-dark terminal (like VS Code's) the operator asked for. The `theme` prop is
+// still accepted for API symmetry but resolves to this one palette either way, so a
+// light-on-dark, readable terminal shows even when the rest of the app is light.
+const DARK_TERMINAL: ITheme = {
+  background: "#25272b",
+  foreground: "#e5e5e5",
+  cursor: "#818cf8",
+};
 const THEMES: Record<TermTheme, ITheme> = {
-  dark: {
-    background: "#0a0a0a",
-    foreground: "#e5e5e5",
-    cursor: "#818cf8",
-  },
-  light: {
-    background: "#ffffff",
-    foreground: "#1a1a1a",
-    cursor: "#4f46e5",
-    selectionBackground: "#c7d2fe",
-    black: "#1a1a1a",
-    red: "#c0392b",
-    green: "#1e8449",
-    yellow: "#b7791f",
-    blue: "#2563eb",
-    magenta: "#9333ea",
-    cyan: "#0e7490",
-    white: "#4b5563",
-    brightBlack: "#6b7280",
-    brightRed: "#e74c3c",
-    brightGreen: "#27ae60",
-    brightYellow: "#d97706",
-    brightBlue: "#3b82f6",
-    brightMagenta: "#a855f7",
-    brightCyan: "#0891b2",
-    brightWhite: "#111827",
-  },
+  dark: DARK_TERMINAL,
+  light: DARK_TERMINAL,
 };
 
 /**
@@ -53,15 +35,27 @@ export default function Terminal({
   cwd,
   initialCommand,
   theme = "dark",
+  active = true,
 }: {
   cwd?: string;
   /** If set, auto-run this command once the shell is ready (e.g. `claude attach <id>`). */
   initialCommand?: string;
   /** Color theme; switches live without respawning the PTY. */
   theme?: TermTheme;
+  /**
+   * Whether this terminal is the visible/active tab. While `false` the host hides it
+   * with `display:none`, so the element is 0×0 and any window resize that happens
+   * meanwhile never reaches its PTY. On the false→true transition we re-fit, push the
+   * real size to the PTY, and focus the shell so the user can type without a stray
+   * click. Defaults to `true` for standalone use.
+   */
+  active?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const termRef = useRef<XTerm | null>(null);
+  // Set by the lifecycle effect to its `syncSize` (fit xterm + push size to the PTY).
+  // The `active` effect calls it on show without reaching into the other effect's scope.
+  const syncRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const el = ref.current;
@@ -95,6 +89,22 @@ export default function Terminal({
     let ptyId: string | null = null;
     let disposed = false;
 
+    // Fit xterm to the element and push the resulting grid to the PTY. Bails while the
+    // element is hidden (0×0) — fitting then would shrink the PTY to ~0 and corrupt a
+    // full-screen TUI. Shared by the ResizeObserver, the post-spawn sync, and (via
+    // syncRef) the `active` effect when a hidden tab is re-shown.
+    const syncSize = () => {
+      if (el.offsetWidth === 0 || el.offsetHeight === 0) return;
+      try {
+        fit.fit();
+      } catch {
+        return;
+      }
+      if (ptyId)
+        void invoke("pty_resize", { id: ptyId, cols: term.cols, rows: term.rows });
+    };
+    syncRef.current = syncSize;
+
     const channel = new Channel<PtyMsg>();
     channel.onmessage = (msg) => {
       // Output can still arrive after the component unmounts (StrictMode double-mount
@@ -122,6 +132,10 @@ export default function Terminal({
         }
         ptyId = id;
         term.onData((d) => void invoke("pty_write", { id, data: d }));
+        // The element may have been laid out (or resized) between open() and now while
+        // ptyId was still null — syncSize then skipped the pty_resize. Push the real
+        // size now that the PTY exists so the shell never starts at a stale 80×24.
+        syncSize();
         // Auto-run the initial command (e.g. attach/resume) once the prompt is ready.
         if (initialCommand) {
           setTimeout(() => {
@@ -137,30 +151,32 @@ export default function Terminal({
         term.write(`\r\n\x1b[31mpty spawn failed: ${String(e)}\x1b[0m\r\n`)
       );
 
-    const onResize = () => {
-      // When the tab is hidden (display:none) the element is 0×0. Fitting then would
-      // shrink the PTY to ~0 rows/cols and corrupt a full-screen TUI like
-      // `claude attach`. Skip while hidden; the observer fires again on re-show.
-      if (el.offsetWidth === 0 || el.offsetHeight === 0) return;
-      try {
-        fit.fit();
-      } catch {
-        return;
-      }
-      if (ptyId)
-        void invoke("pty_resize", { id: ptyId, cols: term.cols, rows: term.rows });
-    };
-    const ro = new ResizeObserver(onResize);
+    // Live resize while this tab is visible. While hidden the element is 0×0, so
+    // syncSize bails and the resize is deferred to the `active` effect on re-show.
+    const ro = new ResizeObserver(syncSize);
     ro.observe(el);
 
     return () => {
       disposed = true;
+      syncRef.current = () => {};
       ro.disconnect();
       if (ptyId) void invoke("pty_kill", { id: ptyId });
       term.dispose();
       termRef.current = null;
     };
   }, [cwd]);
+
+  // On the hidden→visible transition, re-sync the size (a window resize while hidden
+  // never reached this PTY) and focus the shell so the user can type immediately. rAF
+  // defers one frame so the element has its laid-out dimensions before we fit.
+  useEffect(() => {
+    if (!active) return;
+    const raf = requestAnimationFrame(() => {
+      syncRef.current();
+      termRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [active]);
 
   // Live theme switch — recolors the existing terminal without touching the PTY.
   useEffect(() => {

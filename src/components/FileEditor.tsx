@@ -25,7 +25,14 @@ loader.config({ monaco });
 
 /** Monaco-backed file editor. Loads via the backend `read_file`; Cmd/Ctrl+S saves
  *  via `write_file`. Language is inferred from the file path. */
-export default function FileEditor({ path }: { path: string }) {
+export default function FileEditor({
+  path,
+  theme = "light",
+}: {
+  path: string;
+  theme?: "dark" | "light";
+}) {
+  const monacoTheme = theme === "dark" ? "vs-dark" : "light";
   const [value, setValue] = useState<string>("");
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string>("");
@@ -87,17 +94,17 @@ export default function FileEditor({ path }: { path: string }) {
 
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="px-3 py-1 border-b border-neutral-200 bg-neutral-50 text-[10px] font-mono text-neutral-500 shrink-0 flex items-center justify-between">
+      <div className="px-3 py-1 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-[10px] font-mono text-neutral-500 dark:text-neutral-400 shrink-0 flex items-center justify-between">
         <span className="truncate">{path}</span>
         <span className="flex items-center gap-2 shrink-0">
-          {dirty && <span className="text-amber-600">● unsaved</span>}
+          {dirty && <span className="text-amber-600 dark:text-amber-300">● unsaved</span>}
           <button
             type="button"
             onClick={() => void toggleDiff()}
             className={`px-2 py-0.5 rounded border cursor-pointer transition-colors ${
               mode === "diff"
-                ? "border-amber-300 bg-amber-50 text-amber-700 font-bold"
-                : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-100"
+                ? "border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-bold"
+                : "border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             }`}
             title="Show diff against HEAD"
           >
@@ -107,7 +114,7 @@ export default function FileEditor({ path }: { path: string }) {
             type="button"
             onClick={() => void save()}
             disabled={!dirty || saving}
-            className="px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold disabled:opacity-40 disabled:cursor-default cursor-pointer hover:bg-indigo-100 transition-colors"
+            className="px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold disabled:opacity-40 disabled:cursor-default cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
             title="Save (Cmd/Ctrl+S)"
           >
             {saving ? "…" : "Save"}
@@ -116,13 +123,14 @@ export default function FileEditor({ path }: { path: string }) {
       </div>
       <div className="flex-1 overflow-hidden">
         {status === "error" ? (
-          <div className="p-4 text-xs font-mono text-rose-600">{error}</div>
+          <div className="p-4 text-xs font-mono text-rose-600 dark:text-rose-300">{error}</div>
         ) : mode === "diff" ? (
           <DiffEditor
             original={head ?? ""}
             modified={value}
+            theme={monacoTheme}
             language={langFromPath(path)}
-            loading={<div className="p-4 text-xs font-mono text-neutral-400">diff…</div>}
+            loading={<div className="p-4 text-xs font-mono text-neutral-400 dark:text-neutral-500">diff…</div>}
             options={{
               fontSize: 12,
               fontFamily: '"JetBrains Mono", ui-monospace, monospace',
@@ -137,7 +145,8 @@ export default function FileEditor({ path }: { path: string }) {
             key={path}
             path={fileName}
             value={value}
-            loading={<div className="p-4 text-xs font-mono text-neutral-400">loading…</div>}
+            theme={monacoTheme}
+            loading={<div className="p-4 text-xs font-mono text-neutral-400 dark:text-neutral-500">loading…</div>}
             onChange={(v) => {
               setValue(v ?? "");
               setDirty(true);

@@ -206,22 +206,22 @@ export default function QueuePage({
     .filter((p): p is ProjectStatus => !!p);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-neutral-50/50 p-5">
+    <div className="flex-1 overflow-y-auto bg-neutral-50/50 dark:bg-neutral-900 p-5">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-sm font-display font-bold text-neutral-800 flex items-center gap-2">
-          <GitMerge className="h-4 w-4 text-indigo-500" /> Push / Merge Queue
+        <h1 className="text-sm font-display font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
+          <GitMerge className="h-4 w-4 text-indigo-500 dark:text-indigo-400" /> Push / Merge Queue
         </h1>
         <button
           type="button"
           onClick={() => void refresh()}
-          className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded border border-neutral-200 bg-white hover:bg-neutral-100 text-neutral-600 cursor-pointer"
+          className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 cursor-pointer"
         >
           <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} /> Refresh
         </button>
       </div>
 
       {toast && (
-        <div className="mb-3 text-[11px] font-mono px-3 py-2 rounded border border-neutral-200 bg-white text-neutral-700 break-words">
+        <div className="mb-3 text-[11px] font-mono px-3 py-2 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 break-words">
           {toast}
         </div>
       )}
@@ -229,22 +229,22 @@ export default function QueuePage({
       {/* BRANCH DETAIL — shown when a branch is clicked in the sidebar */}
       {inspect && (
         <section className="mb-6">
-          <div className="bg-white border border-indigo-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-indigo-50/60 border-b border-indigo-100">
-              <span className="font-mono text-xs font-bold text-indigo-800 flex items-center gap-1.5 min-w-0">
+          <div className="bg-white dark:bg-neutral-900 border border-indigo-200 dark:border-indigo-800 rounded-lg shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-indigo-50/60 dark:bg-indigo-950/40 border-b border-indigo-100 dark:border-indigo-800">
+              <span className="font-mono text-xs font-bold text-indigo-800 dark:text-indigo-300 flex items-center gap-1.5 min-w-0">
                 <GitBranch className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{inspect.name}</span>
               </span>
               <div className="flex items-center gap-2 shrink-0">
                 {detail && (
-                  <span className="text-[10px] font-mono text-neutral-500">
+                  <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
                     vs <span className="font-semibold">{detail.base}</span> · ↑{detail.ahead} ↓{detail.behind}
                   </span>
                 )}
                 <button
                   type="button"
                   onClick={() => onClearInspect?.()}
-                  className="text-neutral-400 hover:text-rose-600 cursor-pointer"
+                  className="text-neutral-400 dark:text-neutral-500 hover:text-rose-600 dark:hover:text-rose-300 cursor-pointer"
                   title="Close branch detail"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -253,28 +253,28 @@ export default function QueuePage({
             </div>
 
             {detailErr ? (
-              <div className="px-3 py-3 text-[11px] font-mono text-rose-600">{detailErr}</div>
+              <div className="px-3 py-3 text-[11px] font-mono text-rose-600 dark:text-rose-300">{detailErr}</div>
             ) : !detail ? (
-              <div className="px-3 py-3 text-[11px] font-mono text-neutral-400">loading…</div>
+              <div className="px-3 py-3 text-[11px] font-mono text-neutral-400 dark:text-neutral-500">loading…</div>
             ) : (
               <div className="p-3 space-y-3">
                 <div>
-                  <h3 className="text-[10px] font-mono uppercase tracking-widest font-bold text-neutral-500 mb-1.5 flex items-center gap-1">
+                  <h3 className="text-[10px] font-mono uppercase tracking-widest font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 flex items-center gap-1">
                     <GitCommit className="h-3 w-3" /> Commits ({detail.commits.length})
                   </h3>
                   {detail.commits.length === 0 ? (
-                    <div className="text-[11px] font-mono text-neutral-400">
+                    <div className="text-[11px] font-mono text-neutral-400 dark:text-neutral-500">
                       No commits ahead of {detail.base}.
                     </div>
                   ) : (
                     <div className="space-y-1">
                       {detail.commits.map((c) => (
                         <div key={c.hash} className="flex items-start gap-2 text-[11px] font-mono">
-                          <span className="text-indigo-600 font-semibold shrink-0">{c.hash}</span>
-                          <span className="text-neutral-700 truncate flex-1" title={c.subject}>
+                          <span className="text-indigo-600 dark:text-indigo-300 font-semibold shrink-0">{c.hash}</span>
+                          <span className="text-neutral-700 dark:text-neutral-300 truncate flex-1" title={c.subject}>
                             {c.subject}
                           </span>
-                          <span className="text-neutral-400 shrink-0">{c.author} · {c.relDate}</span>
+                          <span className="text-neutral-400 dark:text-neutral-500 shrink-0">{c.author} · {c.relDate}</span>
                         </div>
                       ))}
                     </div>
@@ -283,12 +283,12 @@ export default function QueuePage({
 
                 {detail.changedFiles.length > 0 && (
                   <div>
-                    <h3 className="text-[10px] font-mono uppercase tracking-widest font-bold text-neutral-500 mb-1.5 flex items-center gap-1">
+                    <h3 className="text-[10px] font-mono uppercase tracking-widest font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 flex items-center gap-1">
                       <FileDiff className="h-3 w-3" /> Changed files ({detail.changedFiles.length})
                     </h3>
                     <div className="space-y-0.5">
                       {detail.changedFiles.map((f) => (
-                        <div key={f} className="text-[10px] font-mono text-neutral-600 truncate" title={f}>
+                        <div key={f} className="text-[10px] font-mono text-neutral-600 dark:text-neutral-400 truncate" title={f}>
                           {f}
                         </div>
                       ))}
@@ -303,11 +303,11 @@ export default function QueuePage({
 
       {/* QUEUE */}
       <section className="mb-6">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest font-bold text-indigo-600 mb-2">
+        <h2 className="text-[10px] font-mono uppercase tracking-widest font-bold text-indigo-600 dark:text-indigo-300 mb-2">
           Queue ({queued.length})
         </h2>
         {queued.length === 0 && (
-          <div className="text-[11px] font-mono text-neutral-400 py-2">
+          <div className="text-[11px] font-mono text-neutral-400 dark:text-neutral-500 py-2">
             Queue is empty — add a project below.
           </div>
         )}
@@ -317,36 +317,36 @@ export default function QueuePage({
             return (
               <div
                 key={p.path}
-                className="bg-white border border-neutral-200 rounded-lg p-3 shadow-sm"
+                className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 shadow-sm"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-neutral-900 truncate">
+                      <span className="font-mono text-xs font-bold text-neutral-900 dark:text-neutral-100 truncate">
                         {p.name}
                       </span>
-                      <span className="text-[10px] font-mono text-neutral-500 flex items-center gap-1">
+                      <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
                         <GitBranch className="h-3 w-3" /> {p.branch} → {p.base}
                       </span>
                       {chk ? (
                         <span
                           className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase ${
                             chk.clean
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-rose-50 text-rose-700 border-rose-200"
+                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                              : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
                           }`}
                           title={chk.detail}
                         >
                           {chk.clean ? "ready" : "conflict"}
                         </span>
                       ) : (
-                        <span className="text-[8px] font-mono text-neutral-400">checking…</span>
+                        <span className="text-[8px] font-mono text-neutral-400 dark:text-neutral-500">checking…</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-neutral-500">
+                    <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
                       <span>↑{p.ahead} ↓{p.behind}</span>
                       <span>{p.changed} changed</span>
-                      {p.dirty > 0 && <span className="text-amber-600">{p.dirty} uncommitted</span>}
+                      {p.dirty > 0 && <span className="text-amber-600 dark:text-amber-300">{p.dirty} uncommitted</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -355,8 +355,8 @@ export default function QueuePage({
                       onClick={() => void act("push", p)}
                       className={`flex items-center gap-1 text-[11px] font-mono font-semibold px-2 py-1 rounded border cursor-pointer ${
                         confirming === `${p.path}:push`
-                          ? "border-rose-300 bg-rose-50 text-rose-700"
-                          : "border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                          ? "border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300"
+                          : "border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
                       }`}
                     >
                       <ArrowUp className="h-3 w-3" />
@@ -367,8 +367,8 @@ export default function QueuePage({
                       onClick={() => void act("merge", p)}
                       className={`flex items-center gap-1 text-[11px] font-mono font-semibold px-2 py-1 rounded border cursor-pointer ${
                         confirming === `${p.path}:merge`
-                          ? "border-rose-300 bg-rose-50 text-rose-700"
-                          : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-100"
+                          ? "border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300"
+                          : "border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                       }`}
                       title={`Merge ${p.branch} into ${p.base} (local)`}
                     >
@@ -378,7 +378,7 @@ export default function QueuePage({
                     <button
                       type="button"
                       onClick={() => toggle(p.path)}
-                      className="text-neutral-400 hover:text-rose-600 cursor-pointer"
+                      className="text-neutral-400 dark:text-neutral-500 hover:text-rose-600 dark:hover:text-rose-300 cursor-pointer"
                       title="Remove from queue"
                     >
                       <X className="h-3.5 w-3.5" />
@@ -393,11 +393,11 @@ export default function QueuePage({
 
       {/* TRACKED PROJECTS */}
       <section>
-        <h2 className="text-[10px] font-mono uppercase tracking-widest font-bold text-neutral-500 mb-2">
+        <h2 className="text-[10px] font-mono uppercase tracking-widest font-bold text-neutral-500 dark:text-neutral-400 mb-2">
           Tracked projects ({git.length})
         </h2>
         {paths.length === 0 && (
-          <div className="text-[11px] font-mono text-neutral-400 py-2">
+          <div className="text-[11px] font-mono text-neutral-400 dark:text-neutral-500 py-2">
             No projects — add a workspace (+ Workspace) on the Control page.
           </div>
         )}
@@ -405,18 +405,18 @@ export default function QueuePage({
           {git.map((p) => (
             <div
               key={p.path}
-              className="bg-white border border-neutral-200 rounded-lg p-3 flex items-center justify-between gap-3 shadow-sm"
+              className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 flex items-center justify-between gap-3 shadow-sm"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-neutral-900 truncate">
+                  <span className="font-mono text-xs font-bold text-neutral-900 dark:text-neutral-100 truncate">
                     {p.name}
                   </span>
-                  <span className="text-[10px] font-mono text-neutral-500 flex items-center gap-1">
+                  <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
                     <GitBranch className="h-3 w-3" /> {p.branch}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-neutral-500">
+                <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
                   <span className="flex items-center gap-1 truncate max-w-[280px]">
                     <FolderGit2 className="h-3 w-3" /> {shortCwd(p.path)}
                   </span>
@@ -432,7 +432,7 @@ export default function QueuePage({
                   type="button"
                   onClick={() => toggle(p.path)}
                   disabled={inQueue(p.path)}
-                  className="flex items-center gap-1 text-[11px] font-mono font-semibold px-2.5 py-1 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-default cursor-pointer"
+                  className="flex items-center gap-1 text-[11px] font-mono font-semibold px-2.5 py-1 rounded border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 disabled:opacity-40 disabled:cursor-default cursor-pointer"
                 >
                   <Plus className="h-3 w-3" /> {inQueue(p.path) ? "Queued" : "Add to queue"}
                 </button>
@@ -442,8 +442,8 @@ export default function QueuePage({
                     onClick={() => void removeWt(p.path)}
                     className={`flex items-center gap-1 text-[11px] font-mono font-semibold px-2 py-1 rounded border cursor-pointer ${
                       confirming === `${p.path}:removewt`
-                        ? "border-rose-300 bg-rose-50 text-rose-700"
-                        : "border-neutral-200 bg-white text-neutral-500 hover:text-rose-600 hover:bg-neutral-100"
+                        ? "border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300"
+                        : "border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 hover:text-rose-600 dark:hover:text-rose-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                     }`}
                     title="Remove worktree (deletes the folder)"
                   >

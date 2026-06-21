@@ -70,27 +70,27 @@ function TreeNode({
         type="button"
         onClick={toggle}
         style={{ paddingLeft: depth * 12 + 8 }}
-        className="w-full flex items-center gap-1 py-0.5 pr-2 text-left hover:bg-neutral-100 rounded transition-colors"
+        className="w-full flex items-center gap-1 py-0.5 pr-2 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded transition-colors"
       >
         {entry.isDirectory ? (
           open ? (
-            <ChevronDown className="h-3 w-3 text-neutral-400 shrink-0" />
+            <ChevronDown className="h-3 w-3 text-neutral-400 dark:text-neutral-500 shrink-0" />
           ) : (
-            <ChevronRight className="h-3 w-3 text-neutral-400 shrink-0" />
+            <ChevronRight className="h-3 w-3 text-neutral-400 dark:text-neutral-500 shrink-0" />
           )
         ) : (
           <span className="w-3 shrink-0" />
         )}
         {entry.isDirectory ? (
           open ? (
-            <FolderOpen className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+            <FolderOpen className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
           ) : (
-            <Folder className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+            <Folder className="h-3.5 w-3.5 text-indigo-400 dark:text-indigo-400 shrink-0" />
           )
         ) : (
-          <FileText className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+          <FileText className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500 shrink-0" />
         )}
-        <span className="truncate text-neutral-700">{entry.name}</span>
+        <span className="truncate text-neutral-700 dark:text-neutral-300">{entry.name}</span>
       </button>
       {open && children?.map((c) => (
         <TreeNode
@@ -104,7 +104,7 @@ function TreeNode({
       {open && loading && (
         <div
           style={{ paddingLeft: (depth + 1) * 12 + 8 }}
-          className="text-[10px] text-neutral-400 py-0.5"
+          className="text-[10px] text-neutral-400 dark:text-neutral-500 py-0.5"
         >
           …
         </div>
@@ -112,7 +112,7 @@ function TreeNode({
       {open && children?.length === 0 && !loading && (
         <div
           style={{ paddingLeft: (depth + 1) * 12 + 8 }}
-          className="text-[10px] text-neutral-300 py-0.5 italic"
+          className="text-[10px] text-neutral-300 dark:text-neutral-600 py-0.5 italic"
         >
           empty
         </div>
@@ -133,7 +133,7 @@ export default function FileTree({
 }) {
   if (!roots.length)
     return (
-      <div className="p-3 text-[11px] text-neutral-400 font-mono leading-relaxed">
+      <div className="p-3 text-[11px] text-neutral-400 dark:text-neutral-500 font-mono leading-relaxed">
         No workspace yet. Add a project folder with{" "}
         <span className="font-bold">+ Workspace</span> above.
       </div>

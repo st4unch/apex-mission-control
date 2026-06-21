@@ -25,6 +25,13 @@ pub fn run() {
             let new_file = MenuItemBuilder::with_id("new_file", "New File")
                 .accelerator("CmdOrCtrl+N")
                 .build(app)?;
+            // Own ⌘W ourselves so it closes the active in-app tab instead of the
+            // window. The default `.close_window()` item closes the single window =
+            // quits the whole app; the operator wants ⌘W to drop just the open
+            // session/file and only ⌘Q (or the red close button) to quit.
+            let close_tab = MenuItemBuilder::with_id("close_tab", "Close Tab")
+                .accelerator("CmdOrCtrl+W")
+                .build(app)?;
             let app_menu = SubmenuBuilder::new(app, "Apex")
                 .about(None)
                 .separator()
@@ -39,7 +46,7 @@ pub fn run() {
             let file_menu = SubmenuBuilder::new(app, "File")
                 .item(&new_file)
                 .separator()
-                .close_window()
+                .item(&close_tab)
                 .build()?;
             let edit_menu = SubmenuBuilder::new(app, "Edit")
                 .undo()
@@ -56,10 +63,14 @@ pub fn run() {
             app.set_menu(menu)?;
             Ok(())
         })
-        .on_menu_event(|app, event| {
-            if event.id().as_ref() == "new_file" {
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "new_file" => {
                 let _ = app.emit("menu:new-file", ());
             }
+            "close_tab" => {
+                let _ = app.emit("menu:close-tab", ());
+            }
+            _ => {}
         })
         .manage(pty::PtyManager::default())
         .manage(metrics::Metrics::default())

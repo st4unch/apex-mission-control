@@ -29,3 +29,10 @@ dist-ssr
 # build/test logs
 .tauri-build.log
 .tauri-dev.log
+
+# Local agent working state — lessons.md references the notarization AuthKey (.p8) path/id; never commit
+tasks/
+
+# Signed/notarized distribution artifacts (released via GitHub, not git)
+ApexMissionControl-*.zip
+*-arm64.zip

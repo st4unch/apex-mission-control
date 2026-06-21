@@ -1,8 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
 @import "tailwindcss";
 
+/* Class-based dark mode (Tailwind v4 defaults to media-query). App.tsx toggles a
+   `.dark` class on <html> from the app theme, so every `dark:` utility responds. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
+
+/* Base canvas color per theme — prevents a white flash before React paints and
+   covers any area not explicitly themed. */
+html { background: #ffffff; }
+html.dark { background: #0a0a0a; color-scheme: dark; }

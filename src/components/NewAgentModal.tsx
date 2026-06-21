@@ -60,8 +60,8 @@ export default function NewAgentModal({
   };
 
   const field =
-    "w-full text-xs font-mono px-2 py-1.5 rounded border border-neutral-200 bg-white text-neutral-800 focus:outline-none focus:border-indigo-400";
-  const label = "text-[10px] font-mono uppercase tracking-wider font-bold text-neutral-500";
+    "w-full text-xs font-mono px-2 py-1.5 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-400";
+  const label = "text-[10px] font-mono uppercase tracking-wider font-bold text-neutral-500 dark:text-neutral-400";
 
   return (
     <div
@@ -69,15 +69,15 @@ export default function NewAgentModal({
       onClick={onClose}
     >
       <div
-        className="w-[460px] max-h-[85vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-neutral-200"
+        className="w-[460px] max-h-[85vh] overflow-y-auto bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-200 dark:border-neutral-700"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200">
-          <h2 className="text-sm font-display font-bold text-neutral-800">New agent</h2>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
+          <h2 className="text-sm font-display font-bold text-neutral-800 dark:text-neutral-200">New agent</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-neutral-400 hover:text-neutral-700 cursor-pointer"
+            className="text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -139,7 +139,7 @@ export default function NewAgentModal({
               <button
                 type="button"
                 onClick={() => void addFiles()}
-                className="text-[10px] font-mono font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center gap-1 cursor-pointer"
               >
                 <Plus className="h-3 w-3" /> Add file
               </button>
@@ -149,16 +149,16 @@ export default function NewAgentModal({
                 {files.map((f) => (
                   <div
                     key={f}
-                    className="flex items-center justify-between gap-2 text-[10px] font-mono bg-neutral-50 border border-neutral-200 rounded px-2 py-1"
+                    className="flex items-center justify-between gap-2 text-[10px] font-mono bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded px-2 py-1"
                   >
-                    <span className="flex items-center gap-1 truncate text-neutral-700">
-                      <FileText className="h-3 w-3 shrink-0 text-neutral-400" />
+                    <span className="flex items-center gap-1 truncate text-neutral-700 dark:text-neutral-300">
+                      <FileText className="h-3 w-3 shrink-0 text-neutral-400 dark:text-neutral-500" />
                       {f}
                     </span>
                     <button
                       type="button"
                       onClick={() => setFiles((p) => p.filter((x) => x !== f))}
-                      className="text-neutral-400 hover:text-rose-600 shrink-0 cursor-pointer"
+                      className="text-neutral-400 dark:text-neutral-500 hover:text-rose-600 dark:hover:text-rose-300 shrink-0 cursor-pointer"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -177,14 +177,14 @@ export default function NewAgentModal({
             />
           </div>
 
-          {error && <div className="text-[11px] font-mono text-rose-600 break-words">{error}</div>}
+          {error && <div className="text-[11px] font-mono text-rose-600 dark:text-rose-300 break-words">{error}</div>}
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-neutral-200">
+        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-neutral-200 dark:border-neutral-700">
           <button
             type="button"
             onClick={onClose}
-            className="text-xs font-mono px-3 py-1.5 rounded border border-neutral-200 text-neutral-600 hover:bg-neutral-100 cursor-pointer"
+            className="text-xs font-mono px-3 py-1.5 rounded border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
           >
             Cancel
           </button>
@@ -192,7 +192,7 @@ export default function NewAgentModal({
             type="button"
             onClick={() => void launch()}
             disabled={busy}
-            className="text-xs font-mono font-bold px-3 py-1.5 rounded border border-indigo-200 bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
+            className="text-xs font-mono font-bold px-3 py-1.5 rounded border border-indigo-200 dark:border-indigo-800 bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
           >
             {busy ? "Launching…" : "Launch"}
           </button>

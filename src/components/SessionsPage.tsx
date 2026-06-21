@@ -30,9 +30,9 @@ export interface OpenTerminalSpec {
 }
 
 function statusColor(s: string) {
-  if (s === "working") return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (s === "waiting-for-input") return "bg-amber-50 text-amber-700 border-amber-200";
-  if (s === "stopped") return "bg-rose-50 text-rose-700 border-rose-200";
+  if (s === "working") return "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
+  if (s === "waiting-for-input") return "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800";
+  if (s === "stopped") return "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800";
   return "bg-blue-50 text-blue-700 border-blue-200";
 }
 
@@ -82,15 +82,15 @@ export default function SessionsPage({
   const liveIds = new Set(live.map((s) => s.id));
 
   return (
-    <div className="flex-1 overflow-y-auto bg-neutral-50/50 p-5">
+    <div className="flex-1 overflow-y-auto bg-neutral-50/50 dark:bg-neutral-900 p-5">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-sm font-display font-bold text-neutral-800 flex items-center gap-2">
-          <Plug className="h-4 w-4 text-indigo-500" /> Claude Sessions
+        <h1 className="text-sm font-display font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
+          <Plug className="h-4 w-4 text-indigo-500 dark:text-indigo-400" /> Claude Sessions
         </h1>
         <button
           type="button"
           onClick={() => void refresh()}
-          className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded border border-neutral-200 bg-white hover:bg-neutral-100 text-neutral-600 cursor-pointer transition-colors"
+          className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 cursor-pointer transition-colors"
         >
           <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} /> Refresh
         </button>
@@ -98,23 +98,23 @@ export default function SessionsPage({
 
       {/* LIVE */}
       <section className="mb-6">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest font-bold text-emerald-600 mb-2">
+        <h2 className="text-[10px] font-mono uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-300 mb-2">
           Live sessions ({live.length})
         </h2>
         <div className="space-y-1.5">
           {live.length === 0 && (
-            <div className="text-[11px] font-mono text-neutral-400 py-2">
+            <div className="text-[11px] font-mono text-neutral-400 dark:text-neutral-500 py-2">
               No live sessions.
             </div>
           )}
           {live.map((s) => (
             <div
               key={s.id}
-              className="bg-white border border-neutral-200 rounded-lg p-3 flex items-center justify-between gap-3 shadow-sm"
+              className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 flex items-center justify-between gap-3 shadow-sm"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-neutral-900 truncate max-w-[260px]">
+                  <span className="font-mono text-xs font-bold text-neutral-900 dark:text-neutral-100 truncate max-w-[260px]">
                     {s.name}
                   </span>
                   <span
@@ -124,9 +124,9 @@ export default function SessionsPage({
                   >
                     {s.status}
                   </span>
-                  <span className="text-[9px] font-mono text-neutral-400">{s.modelsUsed}</span>
+                  <span className="text-[9px] font-mono text-neutral-400 dark:text-neutral-500">{s.modelsUsed}</span>
                 </div>
-                <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-neutral-500">
+                <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
                   <span className="flex items-center gap-1 truncate max-w-[280px]">
                     <FolderGit2 className="h-3 w-3" /> {shortCwd(s.worktree)}
                   </span>
@@ -150,7 +150,7 @@ export default function SessionsPage({
                           : undefined,
                     })
                   }
-                  className="flex items-center gap-1.5 text-[11px] font-mono font-semibold px-2.5 py-1 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 cursor-pointer transition-colors"
+                  className="flex items-center gap-1.5 text-[11px] font-mono font-semibold px-2.5 py-1 rounded border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 cursor-pointer transition-colors"
                 >
                   <Plug className="h-3 w-3" /> {s.attachable ? "Attach" : "Aç"}
                 </button>
@@ -158,7 +158,7 @@ export default function SessionsPage({
                   <button
                     type="button"
                     onClick={() => void stop(s)}
-                    className="flex items-center gap-1.5 text-[11px] font-mono font-semibold px-2.5 py-1 rounded border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer transition-colors"
+                    className="flex items-center gap-1.5 text-[11px] font-mono font-semibold px-2.5 py-1 rounded border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 cursor-pointer transition-colors"
                     title="Stop background session (claude stop)"
                   >
                     <Square className="h-3 w-3" /> Stop
@@ -172,12 +172,12 @@ export default function SessionsPage({
 
       {/* HISTORY */}
       <section>
-        <h2 className="text-[10px] font-mono uppercase tracking-widest font-bold text-neutral-500 mb-2">
+        <h2 className="text-[10px] font-mono uppercase tracking-widest font-bold text-neutral-500 dark:text-neutral-400 mb-2">
           Past sessions ({history.length})
         </h2>
         <div className="space-y-1.5">
           {history.length === 0 && (
-            <div className="text-[11px] font-mono text-neutral-400 py-2">
+            <div className="text-[11px] font-mono text-neutral-400 dark:text-neutral-500 py-2">
               No transcript history.
             </div>
           )}
@@ -187,28 +187,28 @@ export default function SessionsPage({
             return (
               <div
                 key={h.sessionId}
-                className="bg-white border border-neutral-200 rounded-lg p-3 flex items-center justify-between gap-3 shadow-sm"
+                className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 flex items-center justify-between gap-3 shadow-sm"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-semibold text-neutral-800 truncate max-w-[240px]">
+                    <span className="font-mono text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate max-w-[240px]">
                       {name}
                     </span>
                     {isLive && (
-                      <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase bg-emerald-50 text-emerald-700 border-emerald-200">
+                      <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800">
                         live
                       </span>
                     )}
-                    <span className="text-[9px] font-mono text-neutral-400">
+                    <span className="text-[9px] font-mono text-neutral-400 dark:text-neutral-500">
                       {(h.sizeBytes / 1024).toFixed(0)} KB
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-neutral-500">
+                  <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
                     <span className="truncate max-w-[300px]">{shortCwd(h.cwd)}</span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" /> {relTime(h.lastModified)}
                     </span>
-                    <span className="text-neutral-300">{h.sessionId.slice(0, 8)}</span>
+                    <span className="text-neutral-300 dark:text-neutral-600">{h.sessionId.slice(0, 8)}</span>
                   </div>
                 </div>
                 <button
@@ -221,7 +221,7 @@ export default function SessionsPage({
                       initialCommand: `claude --resume ${h.sessionId}`,
                     })
                   }
-                  className="shrink-0 flex items-center gap-1.5 text-[11px] font-mono font-semibold px-2.5 py-1 rounded border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-100 cursor-pointer transition-colors"
+                  className="shrink-0 flex items-center gap-1.5 text-[11px] font-mono font-semibold px-2.5 py-1 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer transition-colors"
                   title="Resume this session in a new terminal"
                 >
                   <Play className="h-3 w-3" /> Resume

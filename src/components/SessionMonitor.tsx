@@ -1,4 +1,4 @@
-import { Square, Plug, Clock } from "lucide-react";
+import { Square, SquareX, Plug, Clock } from "lucide-react";
 
 interface AgentSession {
   id: string;
@@ -35,15 +35,15 @@ export default function SessionMonitor({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-mono uppercase tracking-widest font-bold text-neutral-500">
+        <span className="text-[10px] font-mono uppercase tracking-widest font-bold text-neutral-500 dark:text-neutral-400">
           Active sessions ({agents.length})
         </span>
-        <span className="text-[9px] font-mono bg-neutral-100 text-neutral-600 px-1 rounded border border-neutral-200">
+        <span className="text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 px-1 rounded border border-neutral-200 dark:border-neutral-700">
           ~/.claude
         </span>
       </div>
       {agents.length === 0 && (
-        <div className="text-[11px] font-mono text-neutral-400 py-2">
+        <div className="text-[11px] font-mono text-neutral-400 dark:text-neutral-500 py-2">
           No live sessions.
         </div>
       )}
@@ -55,21 +55,21 @@ export default function SessionMonitor({
             onClick={() => onOpen(a)}
             className={`group p-2 rounded border cursor-pointer transition-colors shadow-sm ${
               isSel
-                ? "bg-indigo-50/70 border-indigo-200"
-                : "bg-white border-neutral-200 hover:border-neutral-300"
+                ? "bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800"
+                : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-700"
             }`}
           >
             <div className="flex items-center justify-between gap-1.5">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusDot(a.status)}`} />
-                <span className="font-mono text-xs font-bold text-neutral-900 truncate">
+                <span className="font-mono text-xs font-bold text-neutral-900 dark:text-neutral-100 truncate">
                   {a.name}
                 </span>
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 {a.attachable && (
                   <span title="attachable">
-                    <Plug className="h-3 w-3 text-indigo-400" />
+                    <Plug className="h-3 w-3 text-indigo-400 dark:text-indigo-400" />
                   </span>
                 )}
                 <button
@@ -78,14 +78,16 @@ export default function SessionMonitor({
                     e.stopPropagation();
                     onKill(a);
                   }}
-                  className="text-neutral-300 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  className="group/stop text-neutral-300 dark:text-neutral-600 hover:text-rose-600 dark:hover:text-rose-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                   title="Stop session"
                 >
-                  <Square className="h-3 w-3" />
+                  {/* Empty square at rest; an X appears inside it on hover. */}
+                  <Square className="h-3 w-3 group-hover/stop:hidden" />
+                  <SquareX className="h-3 w-3 hidden group-hover/stop:block" />
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-2 mt-1 text-[9px] font-mono text-neutral-400">
+            <div className="flex items-center gap-2 mt-1 text-[9px] font-mono text-neutral-400 dark:text-neutral-500">
               <span className="uppercase">{a.status}</span>
               <span>·</span>
               <span className="truncate">{a.branch}</span>
