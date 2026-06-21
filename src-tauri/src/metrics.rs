@@ -25,7 +25,7 @@ pub struct AppMetrics {
 }
 
 /// Current CPU% and RAM (MB) used by the app's main process.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn app_metrics(state: State<Metrics>) -> AppMetrics {
     let Ok(pid) = sysinfo::get_current_pid() else {
         return AppMetrics {

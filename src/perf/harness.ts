@@ -139,6 +139,32 @@ async function floodAndEcho(label: string, samples: number, gapMs: number) {
   return { ...res, floodKBduringProbe: kb, floodKBps: Math.round(kb / secs) };
 }
 
+// Hammer a command that spawns git/`claude`/fs work and measure event-loop lag
+// DURING the calls. If the command runs off the main thread (#[tauri::command(async)]
+// → sync_threadpool), the 50ms loop-lag sampler keeps near-perfect time. If it runs
+// on the main thread (plain #[tauri::command]), lag spikes by the subprocess duration
+// — i.e. the UI freezes, which is the reported nav/typing jank.
+async function heavyCommandProbe(label: string, command: string, count: number) {
+  const start = performance.now();
+  const durs: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const t0 = performance.now();
+    try { await invoke(command); } catch { /* ignore */ }
+    durs.push(performance.now() - t0);
+    await sleep(40);
+  }
+  const ll = within(loopLag, start, performance.now()).map((s) => s.lag);
+  return {
+    phase: label,
+    command,
+    invokes: count,
+    invokeMsAvg: avg(durs),
+    invokeMsMax: max(durs),
+    eventLoopLagP95DuringInvokes: pct(ll, 95),
+    eventLoopLagMaxMs: max(ll),
+  };
+}
+
 export function startPerfHarness() {
   if (import.meta.env.VITE_APEX_PERF !== "1") return;
   active = true;
@@ -219,6 +245,14 @@ async function run() {
   window.__apexPerf?.resetBranches?.();
   window.__apexPerf?.closeTerminals?.();
 
+  // 7. Heavy-command main-thread probe — the nav/typing-jank fix verification.
+  //    These spawn git/`claude`/fs subprocesses; after moving them to
+  //    #[tauri::command(async)] they must NOT block the JS main thread.
+  const heavyCommands = [
+    await heavyCommandProbe("heavy_app_metrics", "app_metrics", 20),
+    await heavyCommandProbe("heavy_list_agent_sessions", "list_agent_sessions", 15),
+  ];
+
   const report = {
     generatedAt: new Date().toISOString(),
     note:
@@ -230,6 +264,7 @@ async function run() {
     userAgent: navigator.userAgent,
     ipcRoundTripMs: ipc,
     keystrokeEcho: echoPhases,
+    heavyCommands,
     renderPhases,
   };
   try {

@@ -20,7 +20,7 @@ pub struct DirEntry {
 /// List the immediate children of a directory. Directories first, then files, each
 /// alphabetical. Hidden entries (dotfiles) and heavy build dirs are included but the
 /// frontend may choose to fold them. Errors (missing dir, permission) return Err.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_dir(path: String) -> Result<Vec<DirEntry>, String> {
     let p = Path::new(&path);
     if !p.is_dir() {
@@ -48,7 +48,7 @@ pub fn list_dir(path: String) -> Result<Vec<DirEntry>, String> {
 
 /// Read a UTF-8 text file for the editor. Rejects very large files to keep the
 /// editor responsive.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn read_file(path: String) -> Result<String, String> {
     let p = Path::new(&path);
     let meta = std::fs::metadata(p).map_err(|e| format!("stat failed: {e}"))?;
@@ -59,7 +59,7 @@ pub fn read_file(path: String) -> Result<String, String> {
 }
 
 /// Write text back to a file (editor save).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn write_file(path: String, content: String) -> Result<(), String> {
     std::fs::write(Path::new(&path), content).map_err(|e| format!("write failed: {e}"))
 }
@@ -67,7 +67,7 @@ pub fn write_file(path: String, content: String) -> Result<(), String> {
 /// Read a file's committed (HEAD) version for diffing against the working tree.
 /// Returns the HEAD content, or an empty string if the file is untracked/new (so the
 /// diff shows it as fully added). Errors only if the path isn't inside a git repo.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn read_head_file(path: String) -> Result<String, String> {
     // Canonicalize so it matches git's (also-canonical) toplevel even when the path
     // contains symlinks (e.g. macOS /var → /private/var).
@@ -101,7 +101,7 @@ pub fn read_head_file(path: String) -> Result<String, String> {
 
 /// Create an isolated git worktree for a new agent branch and copy gitignored env
 /// files into it. Returns the worktree path. Requires `repo` to be inside a git repo.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn create_worktree(repo: String, branch: String) -> Result<String, String> {
     let branch = branch.trim();
     if branch.is_empty() {
@@ -200,7 +200,7 @@ fn track_to_status(track: &str) -> &'static str {
 
 /// List local branches of a repo for the topology view. Returns empty if not a git
 /// repo (UI just shows nothing rather than erroring).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_branches(repo: String) -> Result<Vec<GitBranchState>, String> {
     let fmt = "%(refname:short)\x1f%(upstream:track)\x1f%(authorname)\x1f%(subject)";
     let out = Command::new("git")
@@ -295,7 +295,7 @@ fn compute_parents(repo: &str, branches: &mut [GitBranchState]) {
 
 /// Remove a git worktree (and its directory). Destructive — operator-confirmed in UI.
 /// Runs from the main repo so it can remove a linked worktree by path.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn remove_worktree(worktree: String) -> Result<String, String> {
     // The shared git dir lives in the main repo; derive the main worktree from it.
     let common = Command::new("git")

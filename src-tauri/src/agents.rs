@@ -190,7 +190,7 @@ fn disambiguate_names(sessions: &mut [AgentSession]) {
 
 /// Tauri command: live Claude Code sessions from `claude agents --json`.
 /// `--all` includes completed sessions too.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_agent_sessions(include_all: Option<bool>) -> Result<Vec<AgentSession>, String> {
     let mut cmd = Command::new(claude_bin());
     cmd.args(["agents", "--json"]);
@@ -216,7 +216,7 @@ pub fn list_agent_sessions(include_all: Option<bool>) -> Result<Vec<AgentSession
 
 /// Stop any session: background → `claude stop <id>`; interactive (no background id)
 /// → terminate the OS process by pid.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn kill_session(id: Option<String>, pid: Option<i64>) -> Result<String, String> {
     if let Some(id) = id.filter(|s| !s.is_empty()) {
         return stop_agent(id);
@@ -236,7 +236,7 @@ pub fn kill_session(id: Option<String>, pid: Option<i64>) -> Result<String, Stri
 }
 
 /// Stop a background session: `claude stop <id>`.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn stop_agent(id: String) -> Result<String, String> {
     let output = Command::new(claude_bin())
         .args(["stop", &id])

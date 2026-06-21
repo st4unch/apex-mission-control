@@ -130,7 +130,7 @@ fn status_for(path: &str) -> ProjectStatus {
 }
 
 /// Live status for the given project/worktree paths (non-git paths reported as such).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn pm_status(paths: Vec<String>) -> Vec<ProjectStatus> {
     paths.iter().map(|p| status_for(p)).collect()
 }
@@ -144,7 +144,7 @@ pub struct MergeCheck {
 
 /// Trial-merge a branch into its base WITHOUT touching the working tree (git
 /// merge-tree). Reports whether it would merge cleanly.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn pm_check_merge(repo: String, branch: String) -> Result<MergeCheck, String> {
     let base = base_branch(&repo);
     if branch == base {
@@ -182,7 +182,7 @@ pub fn pm_check_merge(repo: String, branch: String) -> Result<MergeCheck, String
 
 /// Local merge: merge `branch` into the repo's base branch. Operator-confirmed in UI.
 /// Switches to base first (fails safely if the tree is dirty).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn pm_merge(repo: String, branch: String) -> Result<String, String> {
     let base = base_branch(&repo);
     let switch = Command::new("git")
@@ -209,7 +209,7 @@ pub fn pm_merge(repo: String, branch: String) -> Result<String, String> {
 }
 
 /// Push a branch to its remote. Operator-confirmed in UI (Golden Rule §6).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn pm_push(repo: String, branch: String) -> Result<String, String> {
     let out = Command::new("git")
         .args(["-C", &repo, "push", "origin", &branch])
@@ -241,7 +241,7 @@ pub struct CollisionReport {
 /// Real, hook-free collision detection: the same repo-relative file being edited
 /// (uncommitted) in two or more worktrees of the same repo. Compares working-tree
 /// changes via `git status --porcelain`.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn pm_collisions(paths: Vec<String>) -> CollisionReport {
     use std::collections::HashMap;
     // repo common-dir -> (repo-relative file -> worktree names that changed it)

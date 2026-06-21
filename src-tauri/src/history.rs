@@ -33,7 +33,7 @@ fn cwd_from_transcript(path: &Path) -> Option<String> {
 }
 
 /// Enumerate all past sessions from `~/.claude/projects/*/*.jsonl`, newest first.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_session_history() -> Result<Vec<SessionHistoryEntry>, String> {
     let home = std::env::var_os("HOME").ok_or("HOME not set")?;
     let projects = Path::new(&home).join(".claude/projects");
