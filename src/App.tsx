@@ -846,9 +846,47 @@ export const loginHandler = async (req, res) => {
   return (
     <div id="vs-ctrl-plane" className="min-h-screen bg-neutral-50 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 flex flex-col font-sans select-none overflow-hidden h-screen text-xs">
       
-      {/* ================= TOP CUSTOM VS CODE STATUS BRANDING BAR ================= */}
-      <header className="h-10 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 flex items-center justify-between shrink-0 select-none shadow-sm">
-        <div className="flex items-center space-x-3">
+      {/* ================= ROW 1: Nav tabs — sits in the macOS overlay titlebar area ================= */}
+      <div
+        data-tauri-drag-region
+        className="h-10 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700 flex items-center shrink-0 select-none"
+      >
+        {/* Left spacer — room for macOS traffic lights (overlay) */}
+        <div className="w-20 shrink-0" data-tauri-drag-region />
+
+        {/* Nav tabs — centered */}
+        <div className="flex-1 flex justify-center items-center space-x-1 text-[11px] font-mono">
+          {(
+            [
+              { id: "control",  label: "Control" },
+              { id: "sessions", label: "Sessions" },
+              { id: "queue",    label: "Queue" },
+              { id: "tools",    label: "Resources" },
+            ] as const
+          ).map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setView(id)}
+              className={`px-3 py-1.5 rounded transition-colors cursor-pointer ${
+                view === id
+                  ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800"
+                  : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Right spacer mirror */}
+        <div className="w-20 shrink-0" data-tauri-drag-region />
+      </div>
+
+      {/* ================= ROW 2: Logo/branding bar + panel toggles + telemetry ================= */}
+      <header className="h-9 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 flex items-center justify-between shrink-0 select-none shadow-sm">
+        {/* Left: panel toggle + logo + title */}
+        <div className="flex items-center space-x-2">
           <button
             type="button"
             onClick={() => setLeftOpen((o) => !o)}
@@ -859,64 +897,17 @@ export const loginHandler = async (req, res) => {
           >
             <PanelLeft className="h-4 w-4" />
           </button>
-          <div className="h-5 w-5 bg-indigo-600 rounded flex items-center justify-center text-white font-bold text-xs select-none shadow animate-pulse">
+          <div className="h-4 w-4 bg-indigo-600 rounded flex items-center justify-center text-white font-bold text-[10px] select-none shadow animate-pulse">
             ⚡
           </div>
-          <div className="flex items-center space-x-1">
-            <span className="font-semibold text-neutral-900 dark:text-neutral-100 font-display">Apex Agent Control IDE</span>
-          </div>
+          <span className="font-semibold text-neutral-900 dark:text-neutral-100 text-[11px]">Apex Agent Control IDE</span>
         </div>
 
-        {/* Primary navigation */}
-        <div className="hidden md:flex items-center space-x-1 text-[11px] font-mono">
-          <button
-            type="button"
-            onClick={() => setView("control")}
-            className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
-              view === "control"
-                ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800"
-                : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
-            }`}
-          >
-            Control
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("sessions")}
-            className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
-              view === "sessions"
-                ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800"
-                : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
-            }`}
-          >
-            Sessions
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("queue")}
-            className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
-              view === "queue"
-                ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800"
-                : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
-            }`}
-          >
-            Queue
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("tools")}
-            className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
-              view === "tools"
-                ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800"
-                : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
-            }`}
-          >
-            Resources
-          </button>
-        </div>
+        {/* Center — drag region */}
+        <div className="flex-1 h-full" data-tauri-drag-region />
 
-        {/* System telemetry ticks right side */}
-        <div className="flex items-center space-x-4 font-mono text-[10px] text-neutral-600 dark:text-neutral-400">
+        {/* Right: telemetry + theme + right panel toggle */}
+        <div className="flex items-center space-x-3 font-mono text-[10px] text-neutral-600 dark:text-neutral-400">
           <div className="flex items-center space-x-1.5">
             <Cpu className="h-3 w-3 text-emerald-600 dark:text-emerald-300" />
             <span>CPU:</span>
@@ -931,7 +922,7 @@ export const loginHandler = async (req, res) => {
               {ramUsage < 1024 ? `${Math.round(ramUsage)} MB` : `${(ramUsage / 1024).toFixed(1)} GB`}
             </span>
           </div>
-          <span className="border-l border-neutral-200 dark:border-neutral-700 pl-3 text-neutral-700 dark:text-neutral-300 font-bold bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700">
+          <span className="pl-2 border-l border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-bold bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700">
             {localTime}
           </span>
           <button
