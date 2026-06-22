@@ -14,9 +14,7 @@
       {
         "title": "Apex Mission Control",
         "width": 1440,
-        "height": 900,
-        "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "height": 900
       }
     ],
     "security": {
