@@ -1,6 +1,18 @@
 // Apex Mission Control — Tauri backend entry point.
+use std::sync::Mutex;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::Emitter;
+
+// Files opened via "Open With" / file association before the frontend listener is ready.
+static STARTUP_FILES: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+#[tauri::command]
+fn get_startup_files() -> Vec<String> {
+    STARTUP_FILES
+        .lock()
+        .map(|mut v| v.drain(..).collect())
+        .unwrap_or_default()
+}
 
 mod agents;
 mod fs;
@@ -104,8 +116,27 @@ pub fn run() {
             fs::fetch_skill_marketplace,
             fs::fetch_mcp_marketplace,
             fs::install_skill,
-            fs::install_mcp
+            fs::install_mcp,
+            get_startup_files
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
+            if let tauri::RunEvent::Opened { urls } = event {
+                let paths: Vec<String> = urls
+                    .iter()
+                    .filter_map(|u| u.to_file_path().ok())
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .collect();
+                // Store for get_startup_files (startup case, before JS listener is ready).
+                if let Ok(mut pending) = STARTUP_FILES.lock() {
+                    pending.extend(paths.clone());
+                }
+                // Also emit for the already-running case.
+                for path in paths {
+                    let _ = app_handle.emit("apex://open-file", path);
+                }
+            }
+        });
 }

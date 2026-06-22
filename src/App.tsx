@@ -404,6 +404,21 @@ export default function App() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // File association: open files passed via "Open With" or double-click in Finder.
+  useEffect(() => {
+    // Files opened before webview was ready (startup).
+    void invoke<string[]>("get_startup_files").then((files) => {
+      files.forEach((p) => { openEditor(p); setView("control"); });
+    });
+    // Files opened while app is already running.
+    const un = listen<string>("apex://open-file", (e) => {
+      openEditor(e.payload);
+      setView("control");
+    });
+    return () => { void un.then((f) => f()); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     localStorage.setItem("apex.worktrees", JSON.stringify(worktrees));
   }, [worktrees]);

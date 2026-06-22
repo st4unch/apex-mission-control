@@ -31,6 +31,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "fileAssociations": [
+      {
+        "ext": ["txt", "md", "json", "yaml", "yml", "toml", "ts", "tsx", "js", "jsx", "rs", "py", "sh", "css", "html", "xml", "csv", "log", "env"],
+        "name": "Text File",
+        "role": "Editor"
+      }
+    ],
     "macOS": {
       "signingIdentity": "Developer ID Application: Murat Aydoan (7PG95YYJ64)"
     }
