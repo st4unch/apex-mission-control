@@ -28,9 +28,11 @@ loader.config({ monaco });
 export default function FileEditor({
   path,
   theme = "light",
+  onDirtyChange,
 }: {
   path: string;
   theme?: "dark" | "light";
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const monacoTheme = theme === "dark" ? "vs-dark" : "light";
   const [value, setValue] = useState<string>("");
@@ -66,6 +68,7 @@ export default function FileEditor({
         if (!active) return;
         setValue(c);
         setDirty(false);
+        onDirtyChange?.(false);
         setStatus("ready");
       })
       .catch((e) => {
@@ -83,6 +86,7 @@ export default function FileEditor({
     try {
       await invoke("write_file", { path, content: valueRef.current });
       setDirty(false);
+      onDirtyChange?.(false);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -150,6 +154,7 @@ export default function FileEditor({
             onChange={(v) => {
               setValue(v ?? "");
               setDirty(true);
+              onDirtyChange?.(true);
             }}
             onMount={(editor) => {
               editor.addCommand(

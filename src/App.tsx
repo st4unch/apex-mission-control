@@ -61,7 +61,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getVersion } from "@tauri-apps/api/app";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
+import { open as openDialog, save as saveDialog, confirm as confirmDialog } from "@tauri-apps/plugin-dialog";
 
 // Types matching the user's workflow model
 interface AgentSession {
@@ -276,7 +276,18 @@ export default function App() {
     });
   };
 
-  const closeTerminal = (key: string) => {
+  const [dirtyTabs, setDirtyTabs] = useState<Record<string, boolean>>({});
+
+  const closeTerminal = async (key: string) => {
+    if (dirtyTabs[key]) {
+      const tab = openTerminals.find(t => t.key === key);
+      const name = tab?.name ?? key;
+      const ok = await confirmDialog(
+        `"${name}" dosyasında kaydedilmemiş değişiklikler var. Yine de kapat?`,
+        { title: "Kaydedilmemiş Değişiklikler", kind: "warning", okLabel: "Kapat", cancelLabel: "İptal" }
+      );
+      if (!ok) return;
+    }
     setOpenTerminals((prev) => {
       const next = prev.filter((tm) => tm.key !== key);
       setActiveTerminalKey((cur) =>
@@ -285,6 +296,7 @@ export default function App() {
       return next;
     });
     setGridKeys((prev) => prev.filter((k) => k !== key));
+    setDirtyTabs((prev) => { const n = { ...prev }; delete n[key]; return n; });
   };
 
   // Top-level view switch: the IDE control plane vs the full Sessions page.
@@ -422,7 +434,7 @@ export default function App() {
   useEffect(() => {
     const un = listen("menu:close-tab", () => {
       const key = activeKeyRef.current;
-      if (key) closeTerminal(key);
+      if (key) void closeTerminal(key);
     });
     return () => {
       void un.then((f) => f());
@@ -1255,11 +1267,14 @@ export const loginHandler = async (req, res) => {
                       {tm.initialCommand && (
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" title={tm.initialCommand} />
                       )}
+                      {dirtyTabs[tm.key] && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" title="Kaydedilmemiş değişiklikler" />
+                      )}
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          closeTerminal(tm.key);
+                          void closeTerminal(tm.key);
                         }}
                         className="ml-0.5 text-neutral-400 dark:text-neutral-500 hover:text-rose-600 dark:hover:text-rose-300 opacity-60 group-hover:opacity-100 transition-opacity cursor-pointer"
                         title="Close tab"
@@ -1432,7 +1447,11 @@ export const loginHandler = async (req, res) => {
                           className="overflow-hidden bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-inner"
                         >
                           <Suspense fallback={<div className="flex-1 flex items-center justify-center text-xs text-neutral-400">Loading editor…</div>}>
-                            <FileEditor path={tm.filePath!} theme={effectiveTheme} />
+                            <FileEditor
+                              path={tm.filePath!}
+                              theme={effectiveTheme}
+                              onDirtyChange={(d) => setDirtyTabs(prev => ({ ...prev, [tm.key]: d }))}
+                            />
                           </Suspense>
                         </div>
                       );
