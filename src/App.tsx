@@ -411,6 +411,19 @@ export default function App() {
     localStorage.setItem("apex.openTabs", JSON.stringify(openTerminals));
   }, [openTerminals]);
 
+  // Sync terminal tab CWDs → worktrees so the file panel stays up-to-date.
+  // Also covers restored tabs from localStorage on startup.
+  useEffect(() => {
+    const cwds = openTerminals
+      .map((t) => t.cwd)
+      .filter((c): c is string => typeof c === "string" && c.startsWith("/"));
+    if (cwds.length === 0) return;
+    setWorktrees((prev) => {
+      const next = [...new Set([...prev, ...cwds])];
+      return next.length === prev.length ? prev : next;
+    });
+  }, [openTerminals]);
+
   // New-agent modal (app-managed: optional git worktree + command in a PTY).
   const [newAgentOpen, setNewAgentOpen] = useState(false);
 
