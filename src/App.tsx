@@ -406,6 +406,8 @@ export default function App() {
   // key via a ref — same pattern as ⌘N above.
   const activeKeyRef = useRef(activeTerminalKey);
   const tabScrollRef = useRef<HTMLDivElement>(null);
+  const [tabDragFrom, setTabDragFrom] = useState<string | null>(null);
+  const [tabDragOver, setTabDragOver] = useState<string | null>(null);
   activeKeyRef.current = activeTerminalKey;
   useEffect(() => {
     const un = listen("menu:close-tab", () => {
@@ -1146,12 +1148,33 @@ export const loginHandler = async (req, res) => {
                   return (
                     <div
                       key={tm.key}
+                      draggable
+                      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setTabDragFrom(tm.key); }}
+                      onDragOver={(e) => { e.preventDefault(); setTabDragOver(tm.key); }}
+                      onDragLeave={() => setTabDragOver(null)}
+                      onDrop={() => {
+                        if (tabDragFrom && tabDragFrom !== tm.key) {
+                          setOpenTerminals(prev => {
+                            const next = [...prev];
+                            const fromIdx = next.findIndex(t => t.key === tabDragFrom);
+                            const toIdx   = next.findIndex(t => t.key === tm.key);
+                            if (fromIdx !== -1 && toIdx !== -1) {
+                              const [moved] = next.splice(fromIdx, 1);
+                              next.splice(toIdx, 0, moved);
+                            }
+                            return next;
+                          });
+                        }
+                        setTabDragFrom(null); setTabDragOver(null);
+                      }}
+                      onDragEnd={() => { setTabDragFrom(null); setTabDragOver(null); }}
                       onClick={() => setActiveTerminalKey(tm.key)}
-                      className={`group flex items-center gap-1.5 px-2.5 h-full border-b-2 cursor-pointer transition-colors shrink-0 ${
+                      className={`group flex items-center gap-1.5 px-2.5 h-full border-b-2 cursor-grab active:cursor-grabbing transition-colors shrink-0 ${
+                        tabDragOver === tm.key ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20" :
                         isActive
                           ? "border-indigo-600 bg-white dark:bg-neutral-900 text-indigo-950 dark:text-indigo-300 font-semibold"
                           : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
-                      }`}
+                      } ${tabDragFrom === tm.key ? "opacity-40" : ""}`}
                     >
                       {tm.kind === "editor" ? (
                         <FileCode className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
