@@ -914,7 +914,7 @@ export const loginHandler = async (req, res) => {
           >
             <PanelLeft className="h-4 w-4" />
           </button>
-          <img src={appIconUrl} className="h-5 w-5 rounded select-none" alt="" />
+          <img src={appIconUrl} className="h-[60px] w-[60px] rounded select-none" alt="" />
           <div className="flex items-center space-x-1">
             <span className="font-semibold text-neutral-900 dark:text-neutral-100 font-display">Apex Agent Control IDE</span>
           </div>
