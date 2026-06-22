@@ -12,6 +12,7 @@ import {
   Search,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Database,
   Play,
   Pause,
@@ -404,6 +405,7 @@ export default function App() {
   // then only quits via ⌘Q / the red close button). Subscribe once, read latest active
   // key via a ref — same pattern as ⌘N above.
   const activeKeyRef = useRef(activeTerminalKey);
+  const tabScrollRef = useRef<HTMLDivElement>(null);
   activeKeyRef.current = activeTerminalKey;
   useEffect(() => {
     const un = listen("menu:close-tab", () => {
@@ -1125,7 +1127,15 @@ export const loginHandler = async (req, res) => {
 
             {/* Dynamic terminal tabs — one per open session, kept alive across switches */}
             <header className="h-9 px-2 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between shrink-0">
-              <div className="flex items-center space-x-0.5 h-full overflow-x-auto flex-1 min-w-0">
+              {/* Left scroll arrow */}
+              <button
+                type="button"
+                onClick={() => { tabScrollRef.current?.scrollBy({ left: -120, behavior: "smooth" }); }}
+                className="shrink-0 h-full px-0.5 text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <div ref={tabScrollRef} className="flex items-center space-x-0.5 h-full overflow-x-auto flex-1 min-w-0 scroll-smooth" style={{ scrollbarWidth: "none" }}>
                 {viewMode === "tabs" && openTerminals.length === 0 && (
                   <span className="px-2 text-[11px] font-mono text-neutral-400 dark:text-neutral-500 flex items-center gap-1.5">
                     <Terminal className="h-3.5 w-3.5" /> Select a session to open a terminal tab
@@ -1173,6 +1183,15 @@ export const loginHandler = async (req, res) => {
                   </span>
                 )}
               </div>
+
+              {/* Right scroll arrow */}
+              <button
+                type="button"
+                onClick={() => { tabScrollRef.current?.scrollBy({ left: 120, behavior: "smooth" }); }}
+                className="shrink-0 h-full px-0.5 text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
 
               <div className="flex items-center gap-2 shrink-0 pr-1">
                 {/* Grid toggle button */}
