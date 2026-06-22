@@ -1036,7 +1036,10 @@ export const loginHandler = async (req, res) => {
               roots={trackedPaths}
               removableRoots={new Set(workspaces)}
               onOpenFile={openEditor}
-              onRemoveRoot={(path) => setWorkspaces((prev) => prev.filter((w) => w !== path))}
+              onRemoveRoot={(path) => {
+                setWorkspaces((prev) => prev.filter((w) => w !== path));
+                setWorktrees((prev) => prev.filter((w) => w !== path));
+              }}
               refreshSignal={fsTick}
             />
           </div>

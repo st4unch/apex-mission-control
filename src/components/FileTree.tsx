@@ -152,7 +152,6 @@ export default function FileTree({
   }, [menu]);
 
   const handleContextMenu = (e: React.MouseEvent, path: string) => {
-    if (!removableRoots?.has(path)) return;
     e.preventDefault();
     e.stopPropagation();
     setMenu({ x: e.clientX, y: e.clientY, path });
@@ -176,7 +175,7 @@ export default function FileTree({
             depth={0}
             onOpenFile={onOpenFile}
             refreshSignal={refreshSignal}
-            onContextMenu={removableRoots?.has(r) ? handleContextMenu : undefined}
+            onContextMenu={handleContextMenu}
           />
         );
       })}
