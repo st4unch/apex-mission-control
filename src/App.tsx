@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import appIconUrl from "./assets/app-icon.png";
 import {
   Folder,
@@ -48,7 +48,7 @@ import BranchDAG from "./components/BranchDAG";
 import AgentTerminal from "./components/Terminal";
 import FileTree from "./components/FileTree";
 import SessionsPage from "./components/SessionsPage";
-import FileEditor from "./components/FileEditor";
+const FileEditor = lazy(() => import("./components/FileEditor"));
 import SessionMonitor from "./components/SessionMonitor";
 import NewAgentModal, { type NewAgentSpec } from "./components/NewAgentModal";
 import QueuePage from "./components/QueuePage";
@@ -630,7 +630,6 @@ import Stripe from 'stripe';
 
 export async function processCharge(amount: number) {
   if (amount <= 0) throw new Error('Invalid price');
-  console.log('Processed static payment request');
   return { success: true };
 }`
     },
@@ -1284,7 +1283,9 @@ export const loginHandler = async (req, res) => {
                       style={{ display: tm.key === activeTerminalKey ? "flex" : "none" }}
                       className="absolute inset-3 flex-col overflow-hidden bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-inner"
                     >
-                      <FileEditor path={tm.filePath!} theme={effectiveTheme} />
+                      <Suspense fallback={<div className="flex-1 flex items-center justify-center text-xs text-neutral-400">Loading editor…</div>}>
+                        <FileEditor path={tm.filePath!} theme={effectiveTheme} />
+                      </Suspense>
                     </div>
                   ) : (
                     <div
