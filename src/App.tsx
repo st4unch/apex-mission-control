@@ -42,7 +42,8 @@ import {
   PanelRight,
   Sun,
   Moon,
-  LayoutGrid
+  LayoutGrid,
+  GripHorizontal
 } from "lucide-react";
 import BranchDAG from "./components/BranchDAG";
 import AgentTerminal from "./components/Terminal";
@@ -53,7 +54,6 @@ import SessionMonitor from "./components/SessionMonitor";
 import NewAgentModal, { type NewAgentSpec } from "./components/NewAgentModal";
 import QueuePage from "./components/QueuePage";
 import ResourcesPage from "./components/ResourcesPage";
-import TerminalGrid from "./components/TerminalGrid";
 import { buildAgentCommand } from "./lib/agent";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -408,6 +408,12 @@ export default function App() {
   const tabScrollRef = useRef<HTMLDivElement>(null);
   const tabDragFromRef = useRef<string | null>(null);
   const [tabDragOver, setTabDragOver] = useState<string | null>(null);
+  // Grid resize splits (percentage)
+  const [gridColSplit, setGridColSplit] = useState(50);
+  const [gridRowSplit, setGridRowSplit] = useState(50);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  const gridDragFromRef = useRef<string | null>(null);
+  const [gridDragOver, setGridDragOver] = useState<string | null>(null);
   activeKeyRef.current = activeTerminalKey;
   useEffect(() => {
     const un = listen("menu:close-tab", () => {
@@ -1256,62 +1262,141 @@ export const loginHandler = async (req, res) => {
               </div>
             </header>
 
-            {/* Terminal surfaces — tab mode: only active shown (Terax pattern).
-                Grid mode: TerminalGrid renders up to 4 simultaneously. */}
-            <div className="flex-1 overflow-hidden relative">
-              {viewMode === "grid" && (
-                <div className="absolute inset-0">
-                  <TerminalGrid
-                    terminals={openTerminals.filter(t => t.kind === "terminal")}
-                    gridKeys={gridKeys.filter(k => openTerminals.some(t => t.key === k))}
-                    onGridKeysChange={setGridKeys}
-                    theme={effectiveTheme}
-                  />
-                </div>
-              )}
-              {/* Keep tab terminals mounted even in grid mode (PTY stays alive) */}
-              {viewMode === "grid" ? null : openTerminals.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-neutral-400 dark:text-neutral-500 text-xs font-mono">
-                  No active tab — click a session (terminal) or open a file from the
-                  left (editor).
-                </div>
-              ) : (
-                openTerminals.map((tm) =>
-                  tm.kind === "editor" ? (
-                    <div
-                      key={tm.key}
-                      style={{ display: tm.key === activeTerminalKey ? "flex" : "none" }}
-                      className="absolute inset-3 flex-col overflow-hidden bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-inner"
-                    >
-                      <Suspense fallback={<div className="flex-1 flex items-center justify-center text-xs text-neutral-400">Loading editor…</div>}>
-                        <FileEditor path={tm.filePath!} theme={effectiveTheme} />
-                      </Suspense>
+            {/* Terminal surfaces — PTY instances NEVER unmount (display:none keeps them alive).
+                Grid mode: CSS grid layout on the same container, no new instances. */}
+            {(() => {
+              const validGridKeys = gridKeys.filter(k => openTerminals.some(t => t.key === k && t.kind === "terminal")).slice(0, 4);
+              const gridCount = viewMode === "grid" ? validGridKeys.length : 0;
+              const colTemplate = gridCount >= 2 ? `${gridColSplit}fr ${100 - gridColSplit}fr` : "1fr";
+              const rowTemplate = gridCount >= 3 ? `${gridRowSplit}fr ${100 - gridRowSplit}fr` : "1fr";
+              return (
+                <div
+                  ref={gridContainerRef}
+                  className="flex-1 overflow-hidden"
+                  style={viewMode === "grid" ? {
+                    position: "relative",
+                    display: "grid",
+                    gridTemplateColumns: colTemplate,
+                    gridTemplateRows: rowTemplate,
+                    gap: "6px",
+                    padding: "8px",
+                    background: "#09090b",
+                  } : { position: "relative" }}
+                  onMouseDown={viewMode === "grid" && gridCount >= 2 ? (e) => {
+                    const rect = gridContainerRef.current!.getBoundingClientRect();
+                    const rx = e.clientX - rect.left;
+                    const ry = e.clientY - rect.top;
+                    const THRESH = 10;
+                    const colPx = rect.width * gridColSplit / 100;
+                    const rowPx = rect.height * gridRowSplit / 100;
+                    const isCol = Math.abs(rx - colPx) < THRESH;
+                    const isRow = gridCount >= 3 && Math.abs(ry - rowPx) < THRESH;
+                    if (!isCol && !isRow) return;
+                    e.preventDefault();
+                    const onMove = (ev: MouseEvent) => {
+                      if (isCol) setGridColSplit(pct => Math.max(20, Math.min(80, ((ev.clientX - rect.left) / rect.width) * 100)));
+                      if (isRow) setGridRowSplit(pct => Math.max(20, Math.min(80, ((ev.clientY - rect.top) / rect.height) * 100)));
+                    };
+                    const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                  } : undefined}
+                >
+                  {/* Empty state (tabs mode only) */}
+                  {viewMode === "tabs" && openTerminals.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center text-neutral-400 dark:text-neutral-500 text-xs font-mono">
+                      No active tab — click a session (terminal) or open a file from the left (editor).
                     </div>
-                  ) : (
-                    <div
-                      key={tm.key}
-                      style={{ display: tm.key === activeTerminalKey ? "flex" : "none" }}
-                      className="absolute inset-3 flex-col overflow-hidden bg-[#25272b] rounded-lg border border-neutral-800 shadow-inner"
-                    >
-                      <div className="px-3 py-1 border-b border-neutral-800 text-[10px] font-mono text-neutral-400 shrink-0 truncate flex items-center justify-between">
-                        <span>{tm.cwd ?? "~ (home)"}</span>
-                        {tm.initialCommand && (
-                          <span className="text-emerald-400">● {tm.initialCommand}</span>
-                        )}
+                  )}
+
+                  {openTerminals.map((tm) => {
+                    const gridIdx = viewMode === "grid" ? validGridKeys.indexOf(tm.key) : -1;
+                    const inGrid = gridIdx !== -1;
+                    const isActiveTab = viewMode === "tabs" && tm.key === activeTerminalKey;
+                    const show = inGrid || isActiveTab;
+
+                    const gridCol = (gridIdx % 2) + 1;
+                    const gridRow = Math.floor(gridIdx / 2) + 1;
+
+                    if (tm.kind === "editor") {
+                      return (
+                        <div
+                          key={tm.key}
+                          style={viewMode === "tabs"
+                            ? { position: "absolute", inset: "12px", display: isActiveTab ? "flex" : "none", flexDirection: "column" }
+                            : { display: "none" }}
+                          className="overflow-hidden bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-inner"
+                        >
+                          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-xs text-neutral-400">Loading editor…</div>}>
+                            <FileEditor path={tm.filePath!} theme={effectiveTheme} />
+                          </Suspense>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={tm.key}
+                        style={viewMode === "tabs"
+                          ? { position: "absolute", inset: "12px", display: isActiveTab ? "flex" : "none", flexDirection: "column" }
+                          : inGrid
+                            ? { display: "flex", flexDirection: "column", gridColumn: gridCol, gridRow: gridRow, minWidth: 0, minHeight: 0 }
+                            : { display: "none" }}
+                        className={viewMode === "grid"
+                          ? `overflow-hidden rounded border ${gridDragOver === tm.key ? "border-indigo-500" : "border-neutral-700"} bg-[#25272b]`
+                          : "overflow-hidden bg-[#25272b] rounded-lg border border-neutral-800 shadow-inner"}
+                        onDragOver={viewMode === "grid" ? (e) => { e.preventDefault(); setGridDragOver(tm.key); } : undefined}
+                        onDragLeave={viewMode === "grid" ? (e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setGridDragOver(null); } : undefined}
+                        onDrop={viewMode === "grid" ? (e) => {
+                          e.preventDefault();
+                          const from = gridDragFromRef.current;
+                          if (from && from !== tm.key) {
+                            setGridKeys(prev => {
+                              const next = [...prev];
+                              const fi = next.indexOf(from), ti = next.indexOf(tm.key);
+                              if (fi !== -1 && ti !== -1) [next[fi], next[ti]] = [next[ti], next[fi]];
+                              return next;
+                            });
+                          }
+                          gridDragFromRef.current = null; setGridDragOver(null);
+                        } : undefined}
+                      >
+                        {/* Grid title bar with drag handle */}
+                        {viewMode === "grid" && inGrid ? (
+                          <div
+                            draggable
+                            onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; gridDragFromRef.current = tm.key; }}
+                            onDragEnd={() => { gridDragFromRef.current = null; setGridDragOver(null); }}
+                            className="flex items-center gap-1.5 px-2 py-1 border-b border-neutral-700 bg-neutral-900 shrink-0 select-none cursor-grab active:cursor-grabbing"
+                          >
+                            <GripHorizontal className="h-3 w-3 text-neutral-500 shrink-0" />
+                            <Terminal className="h-3 w-3 text-indigo-400 shrink-0" />
+                            <span className="text-[10px] font-mono text-neutral-300 truncate flex-1">{tm.name}</span>
+                            <button type="button" onClick={() => setGridKeys(prev => prev.filter(k => k !== tm.key))} className="text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer shrink-0">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ) : viewMode === "tabs" ? (
+                          <div className="px-3 py-1 border-b border-neutral-800 text-[10px] font-mono text-neutral-400 shrink-0 truncate flex items-center justify-between">
+                            <span>{tm.cwd ?? "~ (home)"}</span>
+                            {tm.initialCommand && <span className="text-emerald-400">● {tm.initialCommand}</span>}
+                          </div>
+                        ) : null}
+                        <div className="flex-1 overflow-hidden p-2">
+                          <AgentTerminal
+                            cwd={tm.cwd}
+                            initialCommand={tm.initialCommand}
+                            theme={effectiveTheme}
+                            active={show}
+                          />
+                        </div>
                       </div>
-                      <div className="flex-1 overflow-hidden p-2">
-                        <AgentTerminal
-                          cwd={tm.cwd}
-                          initialCommand={tm.initialCommand}
-                          theme={effectiveTheme}
-                          active={tm.key === activeTerminalKey}
-                        />
-                      </div>
-                    </div>
-                  )
-                )
-              )}
-            </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
           </div>
         </section>
 
