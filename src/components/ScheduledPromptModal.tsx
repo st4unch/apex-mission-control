@@ -14,28 +14,14 @@ interface TerminalOption {
   name: string;
 }
 
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-function defaultTimeVal() {
-  const d = new Date(Date.now() + 5 * 60_000);
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
-
-/** Combine today's date with HH:MM:SS string → epoch ms.
- *  If the time has already passed today, schedule for tomorrow. */
-function timeValToEpoch(val: string): number {
-  const [h, m, s] = val.split(":").map(Number);
-  const now = new Date();
-  const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h || 0, m || 0, s || 0);
-  if (candidate.getTime() <= Date.now()) candidate.setDate(candidate.getDate() + 1);
-  return candidate.getTime();
-}
-
-function epochToDisplayTime(ms: number) {
+function epochToInputValue(ms: number) {
   const d = new Date(ms);
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const offset = d.getTimezoneOffset() * 60000;
+  return new Date(ms - offset).toISOString().slice(0, 16);
+}
+
+function inputValueToEpoch(val: string): number {
+  return new Date(val).getTime();
 }
 
 export default function ScheduledPromptModal({
@@ -55,7 +41,7 @@ export default function ScheduledPromptModal({
 }) {
   const [prompt, setPrompt] = useState("");
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
-  const [timeVal, setTimeVal] = useState(defaultTimeVal);
+  const [dateVal, setDateVal] = useState(() => epochToInputValue(Date.now() + 5 * 60_000));
   const [flashKey, setFlashKey] = useState<string | null>(null);
 
   if (!open) return null;
@@ -64,18 +50,18 @@ export default function ScheduledPromptModal({
     setSelectedKeys(prev =>
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
-    // flash animation
     setFlashKey(key);
     setTimeout(() => setFlashKey(null), 350);
   };
 
   const handleAdd = () => {
     if (!prompt.trim() || selectedKeys.length === 0) return;
-    const scheduledAt = timeValToEpoch(timeVal);
+    const scheduledAt = inputValueToEpoch(dateVal);
+    if (isNaN(scheduledAt) || scheduledAt <= Date.now()) return;
     onAdd({ prompt: prompt.trim(), terminalKeys: selectedKeys, scheduledAt });
     setPrompt("");
     setSelectedKeys([]);
-    setTimeVal(defaultTimeVal());
+    setDateVal(epochToInputValue(Date.now() + 5 * 60_000));
   };
 
   const pending = scheduled.filter(p => !p.fired);
@@ -130,7 +116,7 @@ export default function ScheduledPromptModal({
                       onClick={() => toggleKey(t.key)}
                       style={{
                         transition: "background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease",
-                        boxShadow: flashing ? (sel ? "0 0 0 2px #6366f1" : "0 0 0 2px #e5e7eb") : undefined,
+                        boxShadow: flashing ? "0 0 0 2px #6366f1" : undefined,
                       }}
                       className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded border text-left cursor-pointer ${
                         sel
@@ -151,17 +137,22 @@ export default function ScheduledPromptModal({
             )}
           </div>
 
-          {/* Time input — HH:MM:SS */}
+          {/* Time picker */}
           <div>
-            <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 dark:text-neutral-400 mb-1.5">
-              Saat (bugün — geçtiyse yarın)
-            </label>
+            <label className="block text-[10px] font-mono font-bold uppercase text-neutral-500 dark:text-neutral-400 mb-1.5">Zaman</label>
+            {/* "Şimdi" quick button */}
+            <button
+              type="button"
+              onClick={() => setDateVal(epochToInputValue(Date.now()))}
+              className="mb-2 px-2.5 py-1 text-[10px] font-mono rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 hover:border-indigo-300 dark:hover:border-indigo-700 text-neutral-600 dark:text-neutral-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <Clock className="h-3 w-3" /> Şimdi
+            </button>
             <input
-              type="time"
-              step="1"
-              value={timeVal}
-              onChange={e => setTimeVal(e.target.value)}
-              className="w-full px-3 py-2 text-sm font-mono tracking-widest rounded border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-600"
+              type="datetime-local"
+              value={dateVal}
+              onChange={e => setDateVal(e.target.value)}
+              className="w-full px-3 py-1.5 text-xs font-mono rounded border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-600"
             />
           </div>
 
@@ -188,7 +179,7 @@ export default function ScheduledPromptModal({
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] font-mono text-neutral-800 dark:text-neutral-200 truncate">{p.prompt}</p>
                       <p className="text-[9px] font-mono text-neutral-500 dark:text-neutral-400 mt-0.5">
-                        {new Date(p.scheduledAt).toLocaleDateString()} {epochToDisplayTime(p.scheduledAt)} · {p.terminalKeys.length} terminal
+                        {new Date(p.scheduledAt).toLocaleString()} · {p.terminalKeys.length} terminal
                       </p>
                     </div>
                     <button type="button" onClick={() => onCancel(p.id)} className="text-neutral-400 hover:text-rose-500 cursor-pointer shrink-0">
@@ -211,7 +202,7 @@ export default function ScheduledPromptModal({
                   <div key={p.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded border border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 opacity-60">
                     <CheckSquare className="h-3 w-3 text-emerald-500 shrink-0" />
                     <span className="text-[10px] font-mono text-neutral-600 dark:text-neutral-400 truncate flex-1">{p.prompt}</span>
-                    <span className="text-[9px] font-mono text-neutral-400 shrink-0">{epochToDisplayTime(p.scheduledAt)}</span>
+                    <span className="text-[9px] font-mono text-neutral-400 shrink-0">{new Date(p.scheduledAt).toLocaleTimeString()}</span>
                   </div>
                 ))}
               </div>

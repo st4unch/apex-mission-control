@@ -162,8 +162,9 @@ describe("ScheduledPromptModal", () => {
     expect(screen.getByText(/Son Gönderilen/)).toBeInTheDocument();
   });
 
-  it("time input accepts HH:MM:SS format", async () => {
+  it('"Şimdi" button sets datetime to approximately now', async () => {
     const user = userEvent.setup();
+    const before = Date.now();
     render(
       <ScheduledPromptModal
         open
@@ -174,11 +175,12 @@ describe("ScheduledPromptModal", () => {
         onCancel={onCancel}
       />
     );
-    const input = screen.getByRole("textbox", { hidden: true }) as HTMLInputElement
-      ?? document.querySelector('input[type="time"]') as HTMLInputElement;
-    // time input should be present and have a default value
-    const timeInput = document.querySelector('input[type="time"]') as HTMLInputElement;
-    expect(timeInput).toBeTruthy();
-    expect(timeInput.value).toMatch(/^\d{2}:\d{2}/);
+    await user.click(screen.getByRole("button", { name: /şimdi/i }));
+    const after = Date.now();
+    const input = document.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    const picked = new Date(input.value).getTime();
+    expect(picked).toBeGreaterThanOrEqual(before - 60_000);
+    expect(picked).toBeLessThanOrEqual(after + 60_000);
   });
 });
