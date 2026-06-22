@@ -40,7 +40,8 @@ import {
   PanelLeft,
   PanelRight,
   Sun,
-  Moon
+  Moon,
+  LayoutGrid
 } from "lucide-react";
 import BranchDAG from "./components/BranchDAG";
 import AgentTerminal from "./components/Terminal";
@@ -51,6 +52,7 @@ import SessionMonitor from "./components/SessionMonitor";
 import NewAgentModal, { type NewAgentSpec } from "./components/NewAgentModal";
 import QueuePage from "./components/QueuePage";
 import ResourcesPage from "./components/ResourcesPage";
+import TerminalGrid from "./components/TerminalGrid";
 import { buildAgentCommand } from "./lib/agent";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -236,6 +238,13 @@ export default function App() {
   const [activeTerminalKey, setActiveTerminalKey] = useState<string | null>(
     () => loadTabs()[0]?.key ?? null
   );
+  // Grid view mode — shows up to 4 terminals simultaneously
+  const [viewMode, setViewMode] = useState<"tabs" | "grid">(
+    () => (localStorage.getItem("apex.viewMode") as "tabs" | "grid") ?? "tabs"
+  );
+  const [gridKeys, setGridKeys] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("apex.gridKeys") ?? "[]"); } catch { return []; }
+  });
 
   // Open (or focus) a persistent terminal tab. Used by session cards and the
   // Sessions page (attach / resume).
@@ -272,6 +281,7 @@ export default function App() {
       );
       return next;
     });
+    setGridKeys((prev) => prev.filter((k) => k !== key));
   };
 
   // Top-level view switch: the IDE control plane vs the full Sessions page.
@@ -426,6 +436,12 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("apex.openTabs", JSON.stringify(openTerminals));
   }, [openTerminals]);
+  useEffect(() => {
+    localStorage.setItem("apex.viewMode", viewMode);
+  }, [viewMode]);
+  useEffect(() => {
+    localStorage.setItem("apex.gridKeys", JSON.stringify(gridKeys));
+  }, [gridKeys]);
 
   // Sync terminal tab CWDs → worktrees so the file panel stays up-to-date.
   // Also covers restored tabs from localStorage on startup.
@@ -1109,13 +1125,13 @@ export const loginHandler = async (req, res) => {
 
             {/* Dynamic terminal tabs — one per open session, kept alive across switches */}
             <header className="h-9 px-2 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between shrink-0">
-              <div className="flex items-center space-x-0.5 h-full overflow-x-auto">
-                {openTerminals.length === 0 && (
+              <div className="flex items-center space-x-0.5 h-full overflow-x-auto flex-1 min-w-0">
+                {viewMode === "tabs" && openTerminals.length === 0 && (
                   <span className="px-2 text-[11px] font-mono text-neutral-400 dark:text-neutral-500 flex items-center gap-1.5">
                     <Terminal className="h-3.5 w-3.5" /> Select a session to open a terminal tab
                   </span>
                 )}
-                {openTerminals.map((tm) => {
+                {viewMode === "tabs" && openTerminals.map((tm) => {
                   const isActive = tm.key === activeTerminalKey;
                   return (
                     <div
@@ -1150,21 +1166,68 @@ export const loginHandler = async (req, res) => {
                     </div>
                   );
                 })}
+                {viewMode === "grid" && (
+                  <span className="px-2 text-[11px] font-mono text-indigo-500 dark:text-indigo-400 flex items-center gap-1.5">
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                    Grid — {gridKeys.filter(k => openTerminals.some(t => t.key === k)).length} terminals
+                  </span>
+                )}
               </div>
 
-              {/* Console Badge metrics */}
-              <div className="flex items-center space-x-2 text-[10px] font-mono text-neutral-500 dark:text-neutral-400 shrink-0 pr-1">
-                <span>DAEMON:</span>
-                <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">
-                  Connected
-                </span>
+              <div className="flex items-center gap-2 shrink-0 pr-1">
+                {/* Grid toggle button */}
+                <button
+                  type="button"
+                  title={viewMode === "grid" ? "Switch to tab view" : "Switch to grid view (show up to 4 terminals)"}
+                  onClick={() => {
+                    if (viewMode === "tabs") {
+                      // Enter grid mode: populate gridKeys with up to 4 terminal tabs
+                      const termKeys = openTerminals.filter(t => t.kind === "terminal").map(t => t.key).slice(0, 4);
+                      setGridKeys(termKeys);
+                      setViewMode("grid");
+                      setLeftOpen(false);
+                      setRightOpen(false);
+                    } else {
+                      setViewMode("tabs");
+                      setLeftOpen(true);
+                      setRightOpen(true);
+                    }
+                  }}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer ${
+                    viewMode === "grid"
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-800 dark:hover:text-neutral-200"
+                  }`}
+                >
+                  <LayoutGrid className="h-3 w-3" />
+                  <span>Grid</span>
+                </button>
+
+                {/* Console Badge metrics */}
+                <div className="flex items-center space-x-1.5 text-[10px] font-mono text-neutral-500 dark:text-neutral-400">
+                  <span>DAEMON:</span>
+                  <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded font-bold uppercase shadow-sm">
+                    Connected
+                  </span>
+                </div>
               </div>
             </header>
 
-            {/* Terminal surfaces — all mounted, only the active one shown so sessions
-                survive tab switches (the Terax pattern: hide the canvas, don't tear down). */}
+            {/* Terminal surfaces — tab mode: only active shown (Terax pattern).
+                Grid mode: TerminalGrid renders up to 4 simultaneously. */}
             <div className="flex-1 overflow-hidden relative">
-              {openTerminals.length === 0 ? (
+              {viewMode === "grid" && (
+                <div className="absolute inset-0">
+                  <TerminalGrid
+                    terminals={openTerminals.filter(t => t.kind === "terminal")}
+                    gridKeys={gridKeys.filter(k => openTerminals.some(t => t.key === k))}
+                    onGridKeysChange={setGridKeys}
+                    theme={effectiveTheme}
+                  />
+                </div>
+              )}
+              {/* Keep tab terminals mounted even in grid mode (PTY stays alive) */}
+              {viewMode === "grid" ? null : openTerminals.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-neutral-400 dark:text-neutral-500 text-xs font-mono">
                   No active tab — click a session (terminal) or open a file from the
                   left (editor).
