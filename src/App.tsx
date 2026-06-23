@@ -1199,8 +1199,8 @@ export const loginHandler = async (req, res) => {
                   return (
                     <div
                       key={tm.key}
-                      draggable
-                      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; tabDragFromRef.current = tm.key; }}
+                      draggable={renamingKey !== tm.key}
+                      onDragStart={(e) => { if (renamingKey === tm.key) { e.preventDefault(); return; } e.dataTransfer.effectAllowed = "move"; tabDragFromRef.current = tm.key; }}
                       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setTabDragOver(tm.key); }}
                       onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setTabDragOver(null); }}
                       onDrop={(e) => {
@@ -1222,7 +1222,7 @@ export const loginHandler = async (req, res) => {
                       }}
                       onDragEnd={() => { tabDragFromRef.current = null; setTabDragOver(null); }}
                       onClick={() => setActiveTerminalKey(tm.key)}
-                      className={`group flex items-center gap-1.5 px-2.5 h-full border-b-2 cursor-grab active:cursor-grabbing transition-colors shrink-0 ${
+                      className={`group flex items-center gap-1.5 px-2.5 h-full border-b-2 transition-colors shrink-0 ${renamingKey === tm.key ? "cursor-default" : "cursor-grab active:cursor-grabbing"} ${
                         tabDragOver === tm.key ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20" :
                         isActive
                           ? "border-indigo-600 bg-white dark:bg-neutral-900 text-indigo-950 dark:text-indigo-300 font-semibold"
