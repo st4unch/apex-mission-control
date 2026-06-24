@@ -30,9 +30,9 @@ export interface OpenTerminalSpec {
 }
 
 function statusColor(s: string) {
-  if (s === "working") return "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
-  if (s === "waiting-for-input") return "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800";
-  if (s === "stopped") return "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800";
+  if (s === "working") return "bg-emerald-50 dark:bg-green-900/30 text-emerald-700 dark:text-green-400 border-emerald-200 dark:border-green-700";
+  if (s === "waiting-for-input") return "bg-amber-50 dark:bg-amber-900/25 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-600";
+  if (s === "stopped") return "bg-rose-50 dark:bg-red-900/30 text-rose-700 dark:text-red-400 border-rose-200 dark:border-red-700";
   return "bg-blue-50 text-blue-700 border-blue-200";
 }
 
@@ -101,7 +101,7 @@ export default function SessionsPage({
     : history;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-neutral-50/50 dark:bg-neutral-900 p-5">
+    <div className="flex-1 overflow-y-auto bg-neutral-50/50 dark:bg-[#25272b] p-5">
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-sm font-display font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
           <Plug className="h-4 w-4 text-indigo-500 dark:text-indigo-400" /> Claude Sessions
@@ -109,7 +109,7 @@ export default function SessionsPage({
         <button
           type="button"
           onClick={() => void refresh()}
-          className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 cursor-pointer transition-colors"
+          className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#25272b] hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 cursor-pointer transition-colors"
         >
           <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} /> Refresh
         </button>
@@ -123,7 +123,7 @@ export default function SessionsPage({
           placeholder="Search by name, path, branch, session ID…"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          className="w-full pl-8 pr-8 py-1.5 text-[11px] font-mono rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-600"
+          className="w-full pl-8 pr-8 py-1.5 text-[11px] font-mono rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#25272b] text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-600"
         />
         {query && (
           <button type="button" onClick={() => setQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 cursor-pointer">
@@ -134,7 +134,7 @@ export default function SessionsPage({
 
       {/* LIVE */}
       <section className="mb-6">
-        <h2 className="text-[10px] font-mono uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-300 mb-2">
+        <h2 className="text-[10px] font-mono uppercase tracking-widest font-bold text-emerald-600 dark:text-green-400 mb-2">
           Live sessions ({filteredLive.length}{q && live.length !== filteredLive.length ? `/${live.length}` : ""})
         </h2>
         <div className="space-y-1.5">
@@ -146,7 +146,7 @@ export default function SessionsPage({
           {filteredLive.map((s) => (
             <div
               key={s.id}
-              className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 flex items-center justify-between gap-3 shadow-sm"
+              className="bg-white dark:bg-[#25272b] border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 flex items-center justify-between gap-3 shadow-sm"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export default function SessionsPage({
             return (
               <div
                 key={h.sessionId}
-                className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 flex items-center justify-between gap-3 shadow-sm"
+                className="bg-white dark:bg-[#25272b] border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 flex items-center justify-between gap-3 shadow-sm"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -257,7 +257,7 @@ export default function SessionsPage({
                       initialCommand: `claude --resume ${h.sessionId}`,
                     })
                   }
-                  className="shrink-0 flex items-center gap-1.5 text-[11px] font-mono font-semibold px-2.5 py-1 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer transition-colors"
+                  className="shrink-0 flex items-center gap-1.5 text-[11px] font-mono font-semibold px-2.5 py-1 rounded border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#25272b] text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer transition-colors"
                   title="Resume this session in a new terminal"
                 >
                   <Play className="h-3 w-3" /> Resume

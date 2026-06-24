@@ -565,14 +565,15 @@ export default function App() {
     const ws = spec.workspace || workspaces[0];
     if (!ws) throw new Error("Pick a workspace first (+ Workspace).");
     let cwd = ws;
-    if (spec.branch.trim()) {
+    if (spec.type === "claude" && spec.branch.trim()) {
       cwd = await invoke<string>("create_worktree", { repo: ws, branch: spec.branch.trim() });
       setWorktrees((prev) => (prev.includes(cwd) ? prev : [...prev, cwd]));
     }
-    const initialCommand = buildAgentCommand(spec);
+    const initialCommand = spec.type === "claude" ? buildAgentCommand(spec) : undefined;
+    const defaultName = spec.title.trim() || spec.branch.trim() || ws.split("/").filter(Boolean).pop() || (spec.type === "claude" ? "agent" : "terminal");
     openTerminal({
       key: `new:${Date.now()}`,
-      name: spec.title.trim() || spec.branch.trim() || ws.split("/").filter(Boolean).pop() || "agent",
+      name: defaultName,
       kind: "terminal",
       cwd,
       initialCommand,
@@ -963,29 +964,29 @@ export const loginHandler = async (req, res) => {
     switch (status) {
       case "synced":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-250 dark:border-emerald-800 shrink-0">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-50 dark:bg-green-900/30 text-emerald-700 dark:text-green-400 border border-emerald-250 dark:border-green-700 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             <span>SYNCED</span>
           </span>
         );
       case "ahead":
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shrink-0">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-600 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
             <span>AHEAD</span>
           </span>
         );
       case "diverged":
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-250 dark:border-amber-800 shrink-0 animate-pulse">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-50 dark:bg-amber-900/25 text-amber-700 dark:text-amber-400 border border-amber-250 dark:border-amber-600 shrink-0 animate-pulse">
             <AlertTriangle className="h-2.5 w-2.5 text-amber-500 dark:text-amber-400 shrink-0" />
             <span>DIVERGED</span>
           </span>
         );
       case "conflict":
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-750 dark:text-rose-300 border border-rose-250 dark:border-rose-800 shrink-0 animate-bounce">
-            <AlertTriangle className="h-2.5 w-2.5 text-rose-500 dark:text-rose-400 shrink-0" />
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-rose-50 dark:bg-red-900/30 text-rose-750 dark:text-red-400 border border-rose-250 dark:border-red-700 shrink-0 animate-bounce">
+            <AlertTriangle className="h-2.5 w-2.5 text-rose-500 dark:text-red-400 shrink-0" />
             <span>CONFLICT</span>
           </span>
         );
@@ -1000,10 +1001,10 @@ export const loginHandler = async (req, res) => {
   };
 
   return (
-    <div id="vs-ctrl-plane" className="min-h-screen bg-neutral-50 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 flex flex-col font-sans select-none overflow-hidden h-screen text-xs">
+    <div id="vs-ctrl-plane" className="min-h-screen bg-neutral-50 dark:bg-[#25272b] text-neutral-800 dark:text-neutral-200 flex flex-col font-sans select-none overflow-hidden h-screen text-xs">
       
       {/* ================= TOP CUSTOM VS CODE STATUS BRANDING BAR ================= */}
-      <header className="h-10 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 flex items-center justify-between shrink-0 select-none shadow-sm">
+      <header className="h-10 border-b border-neutral-200 dark:border-[#3d3f44] bg-white dark:bg-[#1e1f23] px-3 flex items-center justify-between shrink-0 select-none shadow-sm">
         <div className="flex items-center space-x-3">
           <button
             type="button"
@@ -1028,7 +1029,7 @@ export const loginHandler = async (req, res) => {
             onClick={() => setView("control")}
             className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
               view === "control"
-                ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800"
+                ? "bg-indigo-50 dark:bg-neutral-700 text-indigo-700 dark:text-white font-bold border border-indigo-200 dark:border-neutral-500"
                 : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
             }`}
           >
@@ -1039,7 +1040,7 @@ export const loginHandler = async (req, res) => {
             onClick={() => setView("sessions")}
             className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
               view === "sessions"
-                ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800"
+                ? "bg-indigo-50 dark:bg-neutral-700 text-indigo-700 dark:text-white font-bold border border-indigo-200 dark:border-neutral-500"
                 : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
             }`}
           >
@@ -1050,7 +1051,7 @@ export const loginHandler = async (req, res) => {
             onClick={() => setView("queue")}
             className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
               view === "queue"
-                ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800"
+                ? "bg-indigo-50 dark:bg-neutral-700 text-indigo-700 dark:text-white font-bold border border-indigo-200 dark:border-neutral-500"
                 : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
             }`}
           >
@@ -1061,7 +1062,7 @@ export const loginHandler = async (req, res) => {
             onClick={() => setView("tools")}
             className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
               view === "tools"
-                ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800"
+                ? "bg-indigo-50 dark:bg-neutral-700 text-indigo-700 dark:text-white font-bold border border-indigo-200 dark:border-neutral-500"
                 : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
             }`}
           >
@@ -1072,9 +1073,9 @@ export const loginHandler = async (req, res) => {
         {/* System telemetry ticks right side */}
         <div className="flex items-center space-x-4 font-mono text-[10px] text-neutral-600 dark:text-neutral-400">
           <div className="flex items-center space-x-1.5">
-            <Cpu className="h-3 w-3 text-emerald-600 dark:text-emerald-300" />
+            <Cpu className="h-3 w-3 text-emerald-600 dark:text-green-400" />
             <span>CPU:</span>
-            <span className={cpuUsage > 75 ? "text-rose-600 dark:text-rose-300" : "text-emerald-600 dark:text-emerald-300 font-bold"}>
+            <span className={cpuUsage > 75 ? "text-rose-600 dark:text-red-400" : "text-emerald-600 dark:text-green-400 font-bold"}>
               {cpuUsage}%
             </span>
           </div>
@@ -1144,10 +1145,10 @@ export const loginHandler = async (req, res) => {
 
         {/* ----------------- Panel 1: LEFT SIDEBAR (File Tree Explorer & Workspace Locker) ----------------- */}
         {leftOpen && (
-        <aside id="tree-explorer-sidebar" className="w-72 border-r border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col shrink-0 overflow-hidden">
+        <aside id="tree-explorer-sidebar" className="w-72 border-r border-neutral-200 dark:border-[#3d3f44] bg-white dark:bg-[#25272b] flex flex-col shrink-0 overflow-hidden">
           
           {/* Header Title bar */}
-          <div className="p-3 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between bg-neutral-50/50 dark:bg-neutral-900">
+          <div className="p-3 border-b border-neutral-200 dark:border-[#3d3f44] flex items-center justify-between bg-neutral-50/50 dark:bg-[#1e1f23]">
             <h2 className="text-[10px] font-mono tracking-widest uppercase font-bold text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
               <Folder className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" /> Workspace Files ({trackedPaths.length})
             </h2>
@@ -1155,7 +1156,7 @@ export const loginHandler = async (req, res) => {
               type="button"
               onClick={addWorkspace}
               title="Add project / workspace folder"
-              className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 cursor-pointer transition-colors"
+              className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-indigo-200 dark:border-neutral-500 bg-indigo-50 dark:bg-neutral-700 text-indigo-700 dark:text-neutral-200 hover:bg-indigo-100 dark:hover:bg-neutral-600 cursor-pointer transition-colors"
             >
               + Workspace
             </button>
@@ -1176,7 +1177,7 @@ export const loginHandler = async (req, res) => {
           </div>
 
           {/* BOTTOM ATTACHMENT: ACTIVE CLAUDE AGENT FILE-WATCHER */}
-          <div className="border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-900 p-3 select-none">
+          <div className="border-t border-neutral-200 dark:border-[#3d3f44] bg-neutral-50/50 dark:bg-[#1e1f23] p-3 select-none">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-[10px] uppercase font-mono text-neutral-500 dark:text-neutral-400 tracking-wider font-bold">
                 Lock/Edit File Telemetry
@@ -1189,20 +1190,20 @@ export const loginHandler = async (req, res) => {
                 {collisionReport.collisions.map((c) => (
                   <div
                     key={c.file}
-                    className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded p-2 text-[10px] font-mono shadow-sm"
+                    className="bg-rose-50 dark:bg-red-900/25 border border-rose-200 dark:border-red-800 rounded p-2 text-[10px] font-mono shadow-sm"
                   >
-                    <div className="flex items-center gap-1.5 text-rose-700 dark:text-rose-300 font-bold">
+                    <div className="flex items-center gap-1.5 text-rose-700 dark:text-red-400 font-bold">
                       <AlertTriangle className="h-3 w-3 shrink-0" />
                       <span className="truncate">{c.file}</span>
                     </div>
-                    <div className="text-[9px] text-rose-600 dark:text-rose-300 mt-0.5 truncate">
+                    <div className="text-[9px] text-rose-600 dark:text-red-400 mt-0.5 truncate">
                       edited in: {c.worktrees.join(" · ")}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="p-3 bg-white dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-700 text-center shadow-sm">
+              <div className="p-3 bg-white dark:bg-[#2d2f34] rounded border border-neutral-200 dark:border-neutral-700 text-center shadow-sm">
                 <CheckCircle2 className="h-4 w-4 mx-auto mb-1 text-emerald-500 dark:text-emerald-400" />
                 <p className="text-[10px] font-mono leading-tight text-neutral-500 dark:text-neutral-400">
                   No file collisions across worktrees.
@@ -1218,14 +1219,14 @@ export const loginHandler = async (req, res) => {
         )}
 
         {/* ----------------- Panel 2: CENTER WORKSPACE (Sessions Agent Board + Multi-Console PTY) ----------------- */}
-        <section className="flex-1 flex flex-col overflow-hidden bg-neutral-50/50 dark:bg-neutral-900">
+        <section className="flex-1 flex flex-col overflow-hidden bg-neutral-50/50 dark:bg-[#25272b]">
 
           {/* CENTER: Persistent per-session terminals + editors (session monitor moved
               to the right panel's Sessions tab) */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-neutral-900">
+          <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#25272b]">
 
             {/* Dynamic terminal tabs — one per open session, kept alive across switches */}
-            <header className="h-9 px-2 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between shrink-0">
+            <header className="h-9 px-2 bg-neutral-50 dark:bg-[#1e1f23] border-b border-neutral-200 dark:border-[#3d3f44] flex items-center justify-between shrink-0">
               {/* Left scroll arrow */}
               <button
                 type="button"
@@ -1261,7 +1262,7 @@ export const loginHandler = async (req, res) => {
                         isDragOver ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20" :
                         isDragging ? "opacity-50 border-dashed border-indigo-300" :
                         isActive
-                          ? "border-indigo-600 bg-white dark:bg-neutral-900 text-indigo-950 dark:text-indigo-300 font-semibold"
+                          ? "border-indigo-600 bg-white dark:bg-[#25272b] text-indigo-950 dark:text-white font-semibold"
                           : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
                       }`}
                     >
@@ -1392,7 +1393,7 @@ export const loginHandler = async (req, res) => {
                   className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer ${
                     layoutLocked
                       ? "text-neutral-400 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-300"
-                      : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/50"
+                      : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/50"
                   }`}
                 >
                   {layoutLocked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
@@ -1488,7 +1489,7 @@ export const loginHandler = async (req, res) => {
                           style={viewMode === "tabs"
                             ? { position: "absolute", inset: "12px", display: isActiveTab ? "flex" : "none", flexDirection: "column" }
                             : { display: "none" }}
-                          className="overflow-hidden bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-inner"
+                          className="overflow-hidden bg-white dark:bg-[#25272b] rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-inner"
                         >
                           <Suspense fallback={<div className="flex-1 flex items-center justify-center text-xs text-neutral-400">Loading editor…</div>}>
                             <FileEditor
@@ -1570,16 +1571,16 @@ export const loginHandler = async (req, res) => {
 
         {/* ----------------- Panel 3: RIGHT SIDEBAR (Open Branch / WIP / PRD Release Tracker) ----------------- */}
         {rightOpen && (
-        <aside id="branch-wip-prd-tracker" className="w-80 border-l border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col shrink-0 overflow-y-auto">
+        <aside id="branch-wip-prd-tracker" className="w-80 border-l border-neutral-200 dark:border-[#3d3f44] bg-white dark:bg-[#25272b] flex flex-col shrink-0 overflow-y-auto">
 
           {/* Tabbed header: live session monitor + branch matrix */}
-          <div className="flex border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 shrink-0">
+          <div className="flex border-b border-neutral-200 dark:border-[#3d3f44] bg-neutral-50 dark:bg-[#1e1f23] shrink-0">
             <button
               type="button"
               onClick={() => setRightTab("sessions")}
               className={`flex-1 px-3 py-2 text-[10px] font-mono tracking-wider uppercase font-bold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
                 rightTab === "sessions"
-                  ? "border-indigo-600 text-indigo-700 dark:text-indigo-300 bg-white dark:bg-neutral-900"
+                  ? "border-indigo-500 text-indigo-700 dark:text-white bg-white dark:bg-[#25272b]"
                   : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
               }`}
             >
@@ -1590,7 +1591,7 @@ export const loginHandler = async (req, res) => {
               onClick={() => setRightTab("branch")}
               className={`flex-1 px-3 py-2 text-[10px] font-mono tracking-wider uppercase font-bold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
                 rightTab === "branch"
-                  ? "border-indigo-600 text-indigo-700 dark:text-indigo-300 bg-white dark:bg-neutral-900"
+                  ? "border-indigo-500 text-indigo-700 dark:text-white bg-white dark:bg-[#25272b]"
                   : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
               }`}
             >
@@ -1603,7 +1604,7 @@ export const loginHandler = async (req, res) => {
               <button
                 type="button"
                 onClick={() => setNewAgentOpen(true)}
-                className="w-full mb-3 text-[11px] font-mono font-bold px-2 py-1.5 rounded border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 cursor-pointer transition-colors flex items-center justify-center gap-1.5"
+                className="w-full mb-3 text-[11px] font-mono font-bold px-2 py-1.5 rounded border border-indigo-200 dark:border-neutral-600 bg-indigo-50 dark:bg-neutral-700 text-indigo-700 dark:text-white hover:bg-indigo-100 dark:hover:bg-neutral-600 cursor-pointer transition-colors flex items-center justify-center gap-1.5"
               >
                 <Plus className="h-3 w-3" /> New agent
               </button>
@@ -1638,10 +1639,10 @@ export const loginHandler = async (req, res) => {
             {/* CATEGORY 1: PRODUCTION / RELEASE ENVS (PRD) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-300 flex items-center gap-1">
+                <span className="text-[10px] font-mono uppercase tracking-widest font-bold text-emerald-600 dark:text-green-400 flex items-center gap-1">
                   <ShieldCheck className="h-3 w-3" /> Production Branches (PRD)
                 </span>
-                <span className="text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-emerald-700 dark:text-emerald-300 px-1 border border-neutral-250 dark:border-neutral-700 rounded font-semibold">
+                <span className="text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-emerald-700 dark:text-green-400 px-1 border border-neutral-250 dark:border-neutral-700 rounded font-semibold">
                   {branchList.filter(b => b.type === "PRD").length}
                 </span>
               </div>
@@ -1662,10 +1663,10 @@ export const loginHandler = async (req, res) => {
                         setBranchInspect({ repo: branchRepo, name: branch.name });
                         setView("queue");
                       }}
-                      className="p-2 border border-emerald-100 dark:border-emerald-800 bg-emerald-50/10 dark:bg-emerald-950/40 hover:border-emerald-200 dark:hover:border-emerald-700 rounded cursor-pointer transition-colors shadow-sm"
+                      className="p-2 border border-emerald-100 dark:border-green-900 bg-emerald-50/10 dark:bg-green-900/20 hover:border-emerald-200 dark:hover:border-green-800 rounded cursor-pointer transition-colors shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-1.5">
-                        <span className="font-mono text-xs font-bold text-emerald-800 dark:text-emerald-300 truncate max-w-[140px]">
+                        <span className="font-mono text-xs font-bold text-emerald-800 dark:text-green-400 truncate max-w-[140px]">
                           {branch.name}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -1686,10 +1687,10 @@ export const loginHandler = async (req, res) => {
             {/* CATEGORY 2: WORK-IN-PROGRESS (WIP) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono uppercase tracking-widest font-semibold text-amber-600 dark:text-amber-300 flex items-center gap-1">
+                <span className="text-[10px] font-mono uppercase tracking-widest font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
                   <Zap className="h-3 w-3 animate-pulse" /> Active Workspace WIP
                 </span>
-                <span className="text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-amber-700 dark:text-amber-300 px-1 border border-neutral-250 dark:border-neutral-700 rounded font-semibold">
+                <span className="text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-amber-700 dark:text-amber-400 px-1 border border-neutral-250 dark:border-neutral-700 rounded font-semibold">
                   {branchList.filter(b => b.type === "WIP").length}
                 </span>
               </div>
@@ -1712,8 +1713,8 @@ export const loginHandler = async (req, res) => {
                         }}
                         className={`p-2 border rounded cursor-pointer transition-colors shadow-sm ${
                           agentObj?.id === selectedAgentId
-                            ? "bg-amber-50/40 dark:bg-amber-950/40 border-amber-500"
-                            : "border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900"
+                            ? "bg-amber-50/40 dark:bg-amber-900/25 border-amber-500"
+                            : "border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-700 bg-white dark:bg-[#25272b]"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-1.5">
@@ -1728,8 +1729,8 @@ export const loginHandler = async (req, res) => {
                         </p>
 
                         {agentObj && (
-                          <div className="mt-2 p-1 bg-neutral-50 dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-700 flex items-center justify-between text-[9px] font-mono text-neutral-600 dark:text-neutral-400">
-                            <span className="text-indigo-650 dark:text-indigo-300 font-bold">
+                          <div className="mt-2 p-1 bg-neutral-50 dark:bg-[#2d2f34] rounded border border-neutral-200 dark:border-neutral-700 flex items-center justify-between text-[9px] font-mono text-neutral-600 dark:text-neutral-400">
+                            <span className="text-indigo-650 dark:text-indigo-400 font-bold">
                               🤖 {agentObj.name}
                             </span>
                             <span className="text-[8px] uppercase font-bold text-neutral-550 dark:text-neutral-400">{agentObj.status}</span>
@@ -1747,7 +1748,7 @@ export const loginHandler = async (req, res) => {
                 <span className="text-[10px] font-mono uppercase tracking-widest font-bold text-indigo-550 dark:text-indigo-400 flex items-center gap-1">
                   <GitPullRequest className="h-3 w-3" /> Open Pending (PR/stale)
                 </span>
-                <span className="text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-indigo-700 dark:text-indigo-300 px-1 border border-neutral-250 dark:border-neutral-700 rounded font-semibold">
+                <span className="text-[9px] font-mono bg-neutral-100 dark:bg-neutral-800 text-indigo-700 dark:text-indigo-400 px-1 border border-neutral-250 dark:border-neutral-700 rounded font-semibold">
                   {branchList.filter(b => b.type === "OPEN").length}
                 </span>
               </div>
@@ -1768,7 +1769,7 @@ export const loginHandler = async (req, res) => {
                         setBranchInspect({ repo: branchRepo, name: branch.name });
                         setView("queue");
                       }}
-                      className="p-2 border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 rounded cursor-pointer transition-colors shadow-sm"
+                      className="p-2 border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#25272b] hover:border-neutral-300 dark:hover:border-neutral-600 rounded cursor-pointer transition-colors shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-1.5">
                         <span className="font-mono text-xs text-neutral-700 dark:text-neutral-300 truncate max-w-[140px]">
@@ -1797,7 +1798,7 @@ export const loginHandler = async (req, res) => {
       </div>
 
       {/* ================= FOOTER / STATUS TRAY BAR ================= */}
-      <footer className="h-7 border-t border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 flex items-center justify-between z-10 shrink-0 text-[10px] font-mono text-neutral-500 dark:text-neutral-400 select-none shadow-sm">
+      <footer className="h-7 border-t border-neutral-200 dark:border-[#3d3f44] bg-white dark:bg-[#1e1f23] px-3 flex items-center justify-between z-10 shrink-0 text-[10px] font-mono text-neutral-500 dark:text-neutral-400 select-none shadow-sm">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-1.5 text-neutral-600 dark:text-neutral-400">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -1810,14 +1811,14 @@ export const loginHandler = async (req, res) => {
           <span>|</span>
           <span>
             Collisions:{" "}
-            <strong className={collisionReport.collisions.length > 0 ? "text-rose-600 dark:text-rose-300" : "text-neutral-700 dark:text-neutral-300"}>
+            <strong className={collisionReport.collisions.length > 0 ? "text-rose-600 dark:text-red-400" : "text-neutral-700 dark:text-neutral-300"}>
               {collisionReport.collisions.length}
             </strong>
           </span>
         </div>
 
         <div className="flex items-center space-x-4 text-neutral-600 dark:text-neutral-400">
-          <span>Apex Mission Control <strong className="text-indigo-600 dark:text-indigo-300 font-semibold">v{appVersion || "…"}</strong></span>
+          <span>Apex Mission Control <strong className="text-indigo-600 dark:text-indigo-400 font-semibold">v{appVersion || "…"}</strong></span>
           <span className="text-neutral-300 dark:text-neutral-600">|</span>
           <span>UTF-8</span>
         </div>
@@ -1826,7 +1827,7 @@ export const loginHandler = async (req, res) => {
       <NewAgentModal
         open={newAgentOpen}
         onClose={() => setNewAgentOpen(false)}
-        workspaces={workspaces}
+        workspaces={[...new Set([...workspaces, ...agents.map((a) => a.worktree).filter(Boolean)])].sort()}
         onLaunch={launchAgent}
       />
 

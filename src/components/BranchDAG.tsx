@@ -187,7 +187,7 @@ export default function BranchDAG({
             type="button"
             onClick={() => setActiveTab("graph")}
             className={`px-2 py-0.5 rounded transition-colors ${
-              activeTab === "graph" ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-150 dark:border-indigo-800" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              activeTab === "graph" ? "bg-indigo-50 dark:bg-neutral-700 text-indigo-700 dark:text-white font-semibold border border-indigo-150 dark:border-neutral-500" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             }`}
           >
             DAG Graph
@@ -196,7 +196,7 @@ export default function BranchDAG({
             type="button"
             onClick={() => setActiveTab("info")}
             className={`px-2 py-0.5 rounded transition-colors ${
-              activeTab === "info" ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-150 dark:border-indigo-800" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              activeTab === "info" ? "bg-indigo-50 dark:bg-neutral-700 text-indigo-700 dark:text-white font-semibold border border-indigo-150 dark:border-neutral-500" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             }`}
           >
             Map Details
@@ -349,10 +349,10 @@ export default function BranchDAG({
                 <span
                   className={`text-[8px] font-mono px-1 py-0.2 rounded uppercase font-bold shrink-0 ${
                     selectedNodeData.type === "PRD"
-                      ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
+                      ? "bg-emerald-50 dark:bg-green-900/30 text-emerald-700 dark:text-green-400"
                       : selectedNodeData.status === "diverged"
-                      ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 animate-pulse"
-                      : "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300"
+                      ? "bg-amber-50 dark:bg-amber-900/25 text-amber-700 dark:text-amber-400 animate-pulse"
+                      : "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400"
                   }`}
                 >
                   {selectedNodeData.type} - {selectedNodeData.status}

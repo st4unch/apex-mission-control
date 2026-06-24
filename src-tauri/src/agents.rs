@@ -28,6 +28,9 @@ struct RawAgent {
     /// interactive sessions: "idle" | "busy"; background: "working" | "blocked" | ...
     status: Option<String>,
     state: Option<String>,
+    /// Present when this session was spawned by another Claude session (sub-agent).
+    #[serde(rename = "parentSessionId", default)]
+    parent_session_id: Option<String>,
 }
 
 /// Mirrors the frontend `AgentSession` TypeScript interface (camelCase via serde).
@@ -53,6 +56,8 @@ pub struct AgentSession {
     pub attach_id: String,
     /// OS process id (for stopping interactive sessions that have no background id).
     pub pid: Option<i64>,
+    /// Set when this session was spawned by another Claude agent (sub-agent tree).
+    pub parent_id: Option<String>,
 }
 
 /// Resolve the `claude` binary: GUI apps on macOS inherit a minimal PATH, so a bare
@@ -166,6 +171,7 @@ fn map_agent(raw: RawAgent) -> AgentSession {
         attachable,
         attach_id,
         pid: raw.pid,
+        parent_id: raw.parent_session_id,
     }
 }
 

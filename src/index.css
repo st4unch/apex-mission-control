@@ -14,4 +14,4 @@
 /* Base canvas color per theme — prevents a white flash before React paints and
    covers any area not explicitly themed. */
 html { background: #ffffff; }
-html.dark { background: #0a0a0a; color-scheme: dark; }
+html.dark { background: #25272b; color-scheme: dark; }

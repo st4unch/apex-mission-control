@@ -103,10 +103,10 @@ export default function FileEditor({
 
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="px-3 py-1 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-[10px] font-mono text-neutral-500 dark:text-neutral-400 shrink-0 flex items-center justify-between">
+      <div className="px-3 py-1 border-b border-neutral-200 dark:border-[#3d3f44] bg-neutral-50 dark:bg-[#1e1f23] text-[10px] font-mono text-neutral-500 dark:text-neutral-400 shrink-0 flex items-center justify-between">
         <span className="truncate">{path}</span>
         <span className="flex items-center gap-2 shrink-0">
-          {dirty && <span className="text-amber-600 dark:text-amber-300">● unsaved</span>}
+          {dirty && <span className="text-amber-600 dark:text-amber-400">● unsaved</span>}
           <button
             type="button"
             onClick={() => {
@@ -116,7 +116,7 @@ export default function FileEditor({
             }}
             className={`px-2 py-0.5 rounded border cursor-pointer transition-colors ${
               wordWrap
-                ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold"
+                ? "border-indigo-300 dark:border-neutral-500 bg-indigo-50 dark:bg-neutral-700 text-indigo-700 dark:text-white font-bold"
                 : "border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             }`}
             title="Toggle word wrap"
@@ -132,7 +132,7 @@ export default function FileEditor({
             }}
             className={`px-2 py-0.5 rounded border cursor-pointer transition-colors ${
               minimap
-                ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold"
+                ? "border-indigo-300 dark:border-neutral-500 bg-indigo-50 dark:bg-neutral-700 text-indigo-700 dark:text-white font-bold"
                 : "border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             }`}
             title="Toggle minimap"
@@ -144,7 +144,7 @@ export default function FileEditor({
             onClick={() => void toggleDiff()}
             className={`px-2 py-0.5 rounded border cursor-pointer transition-colors ${
               mode === "diff"
-                ? "border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-bold"
+                ? "border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/25 text-amber-700 dark:text-amber-400 font-bold"
                 : "border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             }`}
             title="Show diff against HEAD"
@@ -155,7 +155,7 @@ export default function FileEditor({
             type="button"
             onClick={() => void save()}
             disabled={!dirty || saving}
-            className="px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold disabled:opacity-40 disabled:cursor-default cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
+            className="px-2 py-0.5 rounded border border-indigo-200 dark:border-neutral-500 bg-indigo-50 dark:bg-neutral-700 text-indigo-700 dark:text-white font-bold disabled:opacity-40 disabled:cursor-default cursor-pointer hover:bg-indigo-100 dark:hover:bg-neutral-600 transition-colors"
             title="Save (Cmd/Ctrl+S)"
           >
             {saving ? "…" : "Save"}
@@ -164,7 +164,7 @@ export default function FileEditor({
       </div>
       <div className="flex-1 overflow-hidden">
         {status === "error" ? (
-          <div className="p-4 text-xs font-mono text-rose-600 dark:text-rose-300">{error}</div>
+          <div className="p-4 text-xs font-mono text-rose-600 dark:text-red-400">{error}</div>
         ) : mode === "diff" ? (
           <DiffEditor
             original={head ?? ""}

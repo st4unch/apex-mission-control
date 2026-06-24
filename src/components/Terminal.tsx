@@ -1,8 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Terminal as XTerm, type ITheme } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
+import { SearchAddon } from "@xterm/addon-search";
 import { Channel, invoke } from "@tauri-apps/api/core";
+import { X, ChevronUp, ChevronDown } from "lucide-react";
 import "@xterm/xterm/css/xterm.css";
 
 // Output bytes arrive as a raw ArrayBuffer (binary fetch path — no JSON byte
@@ -47,9 +49,39 @@ export default function Terminal({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const termRef = useRef<XTerm | null>(null);
+  const searchRef = useRef<SearchAddon | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   // Set by the lifecycle effect to its `syncSize` (fit xterm + push size to the PTY).
   // The `active` effect calls it on show without reaching into the other effect's scope.
   const syncRef = useRef<() => void>(() => {});
+  // Stable ref to the show-search setter — used inside the xterm key handler closure.
+  const openSearchRef = useRef<() => void>(() => {});
+
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const closeSearch = useCallback(() => {
+    setShowSearch(false);
+    setSearchQuery("");
+    // Return focus to the terminal.
+    termRef.current?.focus();
+  }, []);
+
+  // Wire up the stable openSearch ref whenever closeSearch is recreated.
+  useEffect(() => {
+    openSearchRef.current = () => {
+      setShowSearch(true);
+      // Focus the search input on next paint.
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    };
+  }, []);
+
+  // When search becomes visible, auto-focus the input.
+  useEffect(() => {
+    if (showSearch) {
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+  }, [showSearch]);
 
   useEffect(() => {
     const el = ref.current;
@@ -65,6 +97,12 @@ export default function Terminal({
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(el);
+
+    // Full-text search inside the terminal buffer (Cmd+F).
+    const search = new SearchAddon();
+    term.loadAddon(search);
+    searchRef.current = search;
+
     // GPU-accelerated renderer — the default DOM renderer adds visible input-echo
     // latency. Fall back silently to DOM if WebGL is unavailable / context is lost.
     try {
@@ -89,10 +127,15 @@ export default function Terminal({
     // tell them apart — we intercept Shift+Enter and write \n ourselves. This is the
     // Ctrl+J sequence Claude accepts in every terminal without /terminal-setup; the old
     // \x16\r (readline quoted-insert) inserted a literal ^M instead of a real newline.
+    // Cmd+F → open the in-terminal search overlay.
     term.attachCustomKeyEventHandler((e: KeyboardEvent) => {
       if (e.key === "Enter" && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
         if (e.type === "keydown" && ptyId)
           void invoke("pty_write", { id: ptyId, data: "\n" });
+        return false;
+      }
+      if (e.key === "f" && e.metaKey && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+        if (e.type === "keydown") openSearchRef.current();
         return false;
       }
       return true;
@@ -173,6 +216,7 @@ export default function Terminal({
       if (ptyId) void invoke("pty_kill", { id: ptyId });
       term.dispose();
       termRef.current = null;
+      searchRef.current = null;
     };
   }, [cwd]);
 
@@ -193,5 +237,64 @@ export default function Terminal({
     if (termRef.current) termRef.current.options.theme = THEMES[theme];
   }, [theme]);
 
-  return <div ref={ref} className="h-full w-full overflow-hidden" />;
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q);
+    if (searchRef.current && q)
+      searchRef.current.findNext(q, { incremental: true });
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (e.shiftKey) searchRef.current?.findPrevious(searchQuery);
+      else searchRef.current?.findNext(searchQuery);
+    }
+    if (e.key === "Escape") closeSearch();
+    // Don't let keystrokes bubble into xterm.
+    e.stopPropagation();
+  };
+
+  return (
+    <div className="relative h-full w-full overflow-hidden">
+      <div ref={ref} className="h-full w-full overflow-hidden" />
+
+      {/* In-terminal search overlay — toggled by Cmd+F */}
+      {showSearch && (
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-[#1e1f23] border border-[#3d3f44] rounded shadow-lg px-2 py-1">
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Search…"
+            className="w-44 bg-transparent text-[#e5e5e5] text-xs font-mono outline-none placeholder-neutral-500"
+          />
+          <button
+            type="button"
+            onClick={() => searchRef.current?.findPrevious(searchQuery)}
+            title="Previous match (Shift+Enter)"
+            className="text-neutral-400 hover:text-white cursor-pointer p-0.5 transition-colors"
+          >
+            <ChevronUp className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => searchRef.current?.findNext(searchQuery)}
+            title="Next match (Enter)"
+            className="text-neutral-400 hover:text-white cursor-pointer p-0.5 transition-colors"
+          >
+            <ChevronDown className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            onClick={closeSearch}
+            title="Close (Escape)"
+            className="text-neutral-400 hover:text-white cursor-pointer p-0.5 transition-colors ml-0.5"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
