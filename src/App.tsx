@@ -1818,7 +1818,7 @@ export const loginHandler = async (req, res) => {
         </div>
 
         <div className="flex items-center space-x-4 text-neutral-600 dark:text-neutral-400">
-          <span>Apex Mission Control <strong className="text-indigo-600 dark:text-indigo-400 font-semibold">v{appVersion || "…"}</strong></span>
+          <span>Muya <strong className="text-indigo-600 dark:text-indigo-400 font-semibold">v{appVersion || "…"}</strong></span>
           <span className="text-neutral-300 dark:text-neutral-600">|</span>
           <span>UTF-8</span>
         </div>

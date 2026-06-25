@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# publish-release.sh — unattended GitHub publish for Apex Mission Control
+# publish-release.sh — unattended GitHub publish for Muya
 #
 #   git push origin main (fast-forward ONLY) -> gh release create v<version>
 #   with the notarized distribution zip attached.
@@ -33,9 +33,9 @@ VERSION="$(node -p "require('$ROOT/src-tauri/tauri.conf.json').version")"
 [ -n "$VERSION" ] || die "could not read version from tauri.conf.json"
 ARCH="$(uname -m)"
 TAG="v${VERSION}"
-ZIP="$ROOT/ApexMissionControl-${VERSION}-${ARCH}.zip"
+ZIP="$ROOT/Muya-${VERSION}-${ARCH}.zip"
 
-say "Publishing Apex Mission Control $TAG"
+say "Publishing Muya $TAG"
 
 # --- guards -------------------------------------------------------------------
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
